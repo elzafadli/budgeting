@@ -133,7 +133,7 @@
                                 <tr>
                                     <th class="small" width="35%">Kategori</th>
                                     <th class="small" width="30%">Uraian</th>
-                                    <th class="small" width="25%">Jumlah</th>
+                                    <th class="small text-end" width="25%">Jumlah</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -141,12 +141,12 @@
                                     <tr>
                                         <td class="small">{{ $item->account ? $item->account->account_description : '-' }}</td>
                                         <td class="small">{{ $item->remarks ?? '-' }}</td>
-                                        <td class="small"><strong>Rp {{ number_format($item->total_price, 0, ',', '.') }}</strong></td>
+                                        <td class="small text-end"><strong>Rp {{ number_format($item->total_price, 0, ',', '.') }}</strong></td>
                                     </tr>
                                 @endforeach
                                 <tr class="table-secondary">
                                     <td colspan="2" class="small fw-bold text-end">Total:</td>
-                                    <td class="small fw-bold">Rp {{ number_format($budget->total_amount, 0, ',', '.') }}</td>
+                                    <td class="small fw-bold text-end">Rp {{ number_format($budget->total_amount, 0, ',', '.') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -280,19 +280,6 @@
                     <div class="card-body">
                         <a href="{{ route('budgets.cashier-edit', $budget) }}" class="btn btn-sm btn-success w-100">
                             <i class="bi bi-cash-coin"></i> Process Payment
-                        </a>
-                    </div>
-                </div>
-            @endif
-
-            @if(Auth::user()->role === 'admin' && $budget->status === 'finance_approved')
-                <div class="card mb-3">
-                    <div class="card-header py-2">
-                        <h6 class="mb-0 small">Finance Actions</h6>
-                    </div>
-                    <div class="card-body">
-                        <a href="{{ route('realizations.create', $budget) }}" class="btn btn-sm btn-success w-100">
-                            <i class="bi bi-cash-coin"></i> Buat Realisasi
                         </a>
                     </div>
                 </div>
