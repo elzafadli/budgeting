@@ -34,7 +34,6 @@
                             <td class="small">{{ $accountBank->bank_name }}</td>
                             <td class="small">{{ $accountBank->created_at->format('d M Y') }}</td>
                             <td class="small">
-                                @if(Auth::user()->role === 'admin')
                                 <a href="{{ route('account-banks.edit', $accountBank) }}" class="btn btn-sm btn-outline-secondary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -45,7 +44,6 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
-                                @endif
                             </td>
                         </tr>
                         @endforeach

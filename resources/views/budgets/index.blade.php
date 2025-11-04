@@ -6,12 +6,10 @@
 <div class="container-fluid px-4">
     <div class="card">
         <div class="card-header  d-flex justify-content-between align-items-center">
-            <h5 class="card-title">Pengajuan Biaya</h5>
-            @if(Auth::user()->role === 'admin')
+            <h5 class="card-title">Daftar Pengajuan</h5>
             <a href="{{ route('budgets.create') }}" class="btn btn-sm btn-primary">
                 <i class="bi bi-plus-circle me-1"></i> Tambah
             </a>
-            @endif
         </div>
         <div class="card-body">
             @if($budgets->count() > 0)
@@ -78,14 +76,6 @@ $(document).ready(function() {
         "columnDefs": [
             { "orderable": false, "targets": -1 }
         ],
-        "language": {
-            "search": "Search budgets:",
-            "lengthMenu": "Show _MENU_ budgets per page",
-            "info": "Showing _START_ to _END_ of _TOTAL_ budgets",
-            "infoEmpty": "No budgets available",
-            "infoFiltered": "(filtered from _MAX_ total budgets)",
-            "zeroRecords": "No matching budgets found"
-        }
     });
 });
 </script>

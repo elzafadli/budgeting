@@ -59,7 +59,7 @@
 
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('projects.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">
-                    <i class="bi bi-folder"></i> Proyek
+                    <i class="bi bi-folder"></i> Project
                 </a>
             </li>
 
@@ -77,13 +77,19 @@
 
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('budgets.*') ? 'active' : '' }}" href="{{ route('budgets.index') }}">
-                    <i class="bi bi-journal-text"></i> Anggaran
+                    <i class="bi bi-journal-text"></i> Pengajuan
                 </a>
             </li>
 
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('realisasi-budgets.*') ? 'active' : '' }}" href="{{ route('realisasi-budgets.index') }}">
-                    <i class="bi bi-cash-coin"></i> Realisasi Budget
+                    <i class="bi bi-cash-coin"></i> Realisasi
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('invoices.*') ? 'active' : '' }}" href="{{ route('invoices.index') }}">
+                    <i class="bi bi-receipt"></i> Invoice
                 </a>
             </li>
 
@@ -174,6 +180,12 @@
             </li>
 
             <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('invoices.*') ? 'active' : '' }}" href="{{ route('invoices.index') }}">
+                    <i class="bi bi-receipt"></i> Invoice
+                </a>
+            </li>
+
+            <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.profit_loss') }}">
                     <i class="bi bi-file-earmark-text"></i> Laporan
                 </a>
@@ -181,7 +193,7 @@
 
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('projects.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">
-                    <i class="bi bi-folder"></i> Projects
+                    <i class="bi bi-folder"></i> Project
                 </a>
             </li>
 
@@ -196,14 +208,6 @@
                     <i class="bi bi-bank"></i> Rekening Bank
                 </a>
             </li>
-
-            @if(Auth::user()->role === 'admin')
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('budgets.create') ? 'active' : '' }}" href="{{ route('budgets.create') }}">
-                    <i class="bi bi-plus-circle"></i> Create Budget
-                </a>
-            </li>
-            @endif
 
             @if(in_array(Auth::user()->role, ['project_manager', 'finance']))
             <li class="nav-item">

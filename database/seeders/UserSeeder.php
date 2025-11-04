@@ -32,5 +32,12 @@ class UserSeeder extends Seeder
             'password' => bcrypt('password'),
             'role' => 'finance',
         ]);
+
+        \App\Models\User::create([
+            'name' => 'Cashier',
+            'email' => 'cashier@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'cashier',
+        ]);
     }
 }

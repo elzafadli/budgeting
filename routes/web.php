@@ -10,6 +10,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AccountBankController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfitLossController;
+use App\Http\Controllers\InvoiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -21,14 +22,18 @@ Route::middleware(['auth'])->group(function () {
 
     // Budget routes
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
-    Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create')->middleware('role:admin');
-    Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store')->middleware('role:admin');
+    Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
+    Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
     Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
-    Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit')->middleware('role:admin');
-    Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update')->middleware('role:admin');
+    Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
+    Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
     Route::get('/budgets/{budget}/print', [BudgetController::class, 'print'])->name('budgets.print');
-    Route::post('/budgets/{budget}/submit', [BudgetController::class, 'submit'])->name('budgets.submit')->middleware('role:admin');
-    Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy')->middleware('role:admin');
+    Route::post('/budgets/{budget}/submit', [BudgetController::class, 'submit'])->name('budgets.submit');
+    Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
+
+    // Cashier routes for budget completion
+    Route::get('/budgets/{budget}/cashier-edit', [BudgetController::class, 'cashierEdit'])->name('budgets.cashier-edit')->middleware('role:cashier');
+    Route::put('/budgets/{budget}/cashier-update', [BudgetController::class, 'cashierUpdate'])->name('budgets.cashier-update')->middleware('role:cashier');
 
     // Project routes
     Route::resource('projects', ProjectController::class);
@@ -38,6 +43,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Account Bank routes
     Route::resource('account-banks', AccountBankController::class);
+
+    // Invoice routes
+    Route::resource('invoices', InvoiceController::class);
 
     // Approval routes
     Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index')->middleware('role:project_manager,finance');

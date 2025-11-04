@@ -17,7 +17,6 @@
                     <thead>
                         <tr>
                             <th class="small">Kategori</th>
-                            <th class="small">Tipe</th>
                             <th class="small" width="100">Action</th>
                         </tr>
                     </thead>
@@ -25,13 +24,13 @@
                         @foreach($accounts as $account)
                         <tr>
                             <td class="small">{{ $account->account_description }}</td>
-                            <td class="small">{{ [
+                            <!-- <td class="small">{{ [
                                 'asset' => 'Aset',
                                 'liability' => 'Hutang',
                                 'equity' => 'Modal',
                                 'revenue' => 'Pendapatan',
                                 'expense' => 'Biaya',
-                            ][$account->account_type ?? ''] }}</td>
+                            ][$account->account_type ?? ''] }}</td> -->
                             <td class="small">
                                 <a href="{{ route('accounts.show', $account) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i>

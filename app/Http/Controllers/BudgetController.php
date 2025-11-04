@@ -19,16 +19,10 @@ class BudgetController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->role === 'admin') {
-            $budgets = Budget::where('user_id', $user->id)
-                ->with(['items', 'approvals'])
-                ->orderBy('created_at', 'desc')
-                ->get();
-        } else {
-            $budgets = Budget::with(['user', 'items', 'approvals'])
-                ->orderBy('created_at', 'desc')
-                ->get();
-        }
+        $budgets = Budget::with(['user', 'items', 'approvals'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
 
         return view('budgets.index', compact('budgets'));
     }
@@ -36,7 +30,7 @@ class BudgetController extends Controller
     public function create(Request $request)
     {
         $projects = Project::orderBy('name')->get();
-        $accounts = Account::active()->whereNotNull('account_number_parent')->orderBy('account_number')->get();
+        $accounts = Account::active()->orderBy('account_number')->get();
         $accountBanks = AccountBank::orderBy('bank_name')->get();
         $selectedProject = $request->query('project');
 
@@ -48,13 +42,14 @@ class BudgetController extends Controller
         $validated = $request->validate([
             'document_date' => 'required|date',
             'project_id' => 'nullable|exists:projects,id',
-            'account_bank_id' => 'nullable|exists:account_banks,id',
+            'account_from_id' => 'nullable|exists:accounts,id',
+            'account_to' => 'nullable|string',
             'description' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.account_id' => 'required|exists:accounts,id',
             'items.*.total_price' => 'required|numeric|min:0',
             'items.*.remarks' => 'nullable|string',
-            'files.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
+            'files.*' => 'nullable|file|max:2040|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
         ]);
 
         DB::beginTransaction();
@@ -74,7 +69,8 @@ class BudgetController extends Controller
                 'request_no' => $requestNo,
                 'user_id' => auth()->id(),
                 'project_id' => $validated['project_id'] ?? null,
-                'account_bank_id' => $validated['account_bank_id'] ?? null,
+                'account_from_id' => $validated['account_from_id'] ?? null,
+                'account_to' => $validated['account_to'] ?? null,
                 'document_date' => $validated['document_date'],
                 'description' => $validated['description'],
                 'total_amount' => $totalAmount,
@@ -117,16 +113,16 @@ class BudgetController extends Controller
 
     public function show(Budget $budget)
     {
-        $budget->load(['user', 'project', 'accountBank', 'items.account', 'approvals.approver', 'realizations', 'realisasiBudgets', 'files']);
+        $budget->load(['user', 'project', 'accountFrom', 'items.account', 'approvals.approver', 'realizations', 'realisasiBudgets', 'files']);
         return view('budgets.show', compact('budget'));
     }
 
     public function edit(Budget $budget)
     {
-        // Only allow editing draft budgets
-        if ($budget->status !== 'draft') {
+        // Only allow editing draft or canceled budgets
+        if (!in_array($budget->status, ['draft', 'rejected'])) {
             return redirect()->route('budgets.show', $budget)
-                ->with('error', 'Only draft budgets can be edited.');
+                ->with('error', 'Only draft or rejected budgets can be edited.');
         }
 
         // Only allow owner to edit
@@ -143,9 +139,9 @@ class BudgetController extends Controller
 
     public function update(Request $request, Budget $budget)
     {
-        // Only allow updating draft budgets
-        if ($budget->status !== 'draft') {
-            return back()->with('error', 'Only draft budgets can be updated.');
+        // Only allow updating draft or rejected budgets
+        if (!in_array($budget->status, ['draft', 'rejected'])) {
+            return back()->with('error', 'Only draft or rejected budgets can be updated.');
         }
 
         // Only allow owner to update
@@ -156,7 +152,8 @@ class BudgetController extends Controller
         $validated = $request->validate([
             'document_date' => 'required|date',
             'project_id' => 'nullable|exists:projects,id',
-            'account_bank_id' => 'nullable|exists:account_banks,id',
+            'account_from_id' => 'nullable|exists:accounts,id',
+            'account_to' => 'nullable|string',
             'description' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.account_id' => 'required|exists:accounts,id',
@@ -176,7 +173,8 @@ class BudgetController extends Controller
             // Update budget
             $budget->update([
                 'project_id' => $validated['project_id'] ?? null,
-                'account_bank_id' => $validated['account_bank_id'] ?? null,
+                'account_from_id' => $validated['account_from_id'] ?? null,
+                'account_to' => $validated['account_to'] ?? null,
                 'document_date' => $validated['document_date'],
                 'description' => $validated['description'],
                 'total_amount' => $totalAmount,
@@ -260,8 +258,8 @@ class BudgetController extends Controller
             abort(403);
         }
 
-        if ($budget->status !== 'draft') {
-            return back()->with('error', 'Only draft budgets can be deleted.');
+        if (!in_array($budget->status, ['draft', 'rejected'])) {
+            return back()->with('error', 'Only draft or rejected budgets can be deleted.');
         }
 
         $budget->delete();
@@ -270,7 +268,89 @@ class BudgetController extends Controller
 
     public function print(Budget $budget)
     {
-        $budget->load(['user', 'project', 'accountBank', 'items.account', 'approvals.approver']);
+        $budget->load(['user', 'project', 'accountFrom', 'items.account', 'approvals.approver']);
         return view('budgets.print', compact('budget'));
+    }
+
+    public function cashierEdit(Budget $budget)
+    {
+        // Only cashier can access this
+        if (auth()->user()->role !== 'cashier') {
+            abort(403);
+        }
+
+        // Only finance_approved budgets can be edited by cashier
+        if ($budget->status !== 'finance_approved') {
+            return redirect()->route('budgets.show', $budget)
+                ->with('error', 'Only approved budgets can be processed by cashier.');
+        }
+
+        $budget->load('files');
+        $projects = Project::orderBy('name')->get();
+        $accounts = Account::active()->orderBy('account_number')->get();
+        $accountBanks = AccountBank::orderBy('bank_name')->get();
+        $isCashier = true;
+
+        return view('budgets.form', compact('budget', 'projects', 'accounts', 'accountBanks', 'isCashier'));
+    }
+
+    public function cashierUpdate(Request $request, Budget $budget)
+    {
+        // Only cashier can access this
+        if (auth()->user()->role !== 'cashier') {
+            abort(403);
+        }
+
+        // Only finance_approved budgets can be updated by cashier
+        if ($budget->status !== 'finance_approved') {
+            return back()->with('error', 'Only approved budgets can be processed by cashier.');
+        }
+
+        $validated = $request->validate([
+            'account_from_id' => 'required|exists:account_banks,id',
+            'files.*' => 'nullable|file|max:2040|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Update account_from_id
+            $budget->update([
+                'account_from_id' => $validated['account_from_id'],
+                'status' => 'completed',
+            ]);
+
+            // Create cashier approval record
+            BudgetApproval::create([
+                'budget_id' => $budget->id,
+                'approver_id' => auth()->id(),
+                'role' => 'cashier',
+                'level' => 3, // Cashier is level 3 (after project_manager and finance)
+                'status' => 'approved',
+                'note' => 'Payment processed and completed',
+                'approved_at' => now(),
+            ]);
+
+            // Handle file uploads
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    $fileName = time() . '_' . $file->getClientOriginalName();
+                    $filePath = $file->storeAs('budget_files', $fileName, 'public');
+
+                    BudgetFile::create([
+                        'budget_id' => $budget->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_type' => $file->getMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('budgets.show', $budget)->with('success', 'Budget completed successfully.');
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->with('error', 'Failed to complete budget: ' . $e->getMessage())->withInput();
+        }
     }
 }

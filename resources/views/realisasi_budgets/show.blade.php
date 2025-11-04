@@ -93,12 +93,6 @@
                             <label class="form-label small text-muted mb-1">Total Amount</label>
                             <div class="small fw-bold">Rp {{ number_format($realisasiBudget->total_amount, 0, ',', '.') }}</div>
                         </div>
-                        @if($realisasiBudget->approved_total > 0)
-                        <div class="col-md-6">
-                            <label class="form-label small text-muted mb-1">Approved Amount</label>
-                            <div class="small fw-bold text-success">Rp {{ number_format($realisasiBudget->approved_total, 0, ',', '.') }}</div>
-                        </div>
-                        @endif
                     </div>
 
                     <div class="row mt-2">

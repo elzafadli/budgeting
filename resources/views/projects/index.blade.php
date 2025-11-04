@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Projects')
+@section('title', 'Project')
 
 @section('content')
 <div class="container-fluid px-4">
 
     <div class="card">
         <div class="card-header  d-flex justify-content-between align-items-center">
-            <h5 class="card-title">Projects</h5>
+            <h5 class="card-title">Project</h5>
 
             @if(Auth::user()->role === 'admin')
             <a href="{{ route('projects.create') }}" class="btn btn-sm btn-primary">

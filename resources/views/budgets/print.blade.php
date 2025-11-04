@@ -291,11 +291,16 @@
             </tbody>
         </table>
 
-        <!-- Bank Account Info -->
-        @if($budget->accountBank)
+        <!-- Transfer Info -->
+        @if($budget->accountFrom || $budget->account_to)
         <div style="margin: 10px 0; padding: 5px; border: 1px solid #000;">
-            <strong>Rekening Bank:</strong> {{ $budget->accountBank->bank_name }} - {{ $budget->accountBank->account_number }}
-            (a/n {{ $budget->accountBank->account_holder_name }})
+            @if($budget->accountFrom)
+            <strong>Transfer Dari:</strong> {{ $budget->accountFrom->bank_name }} - {{ $budget->accountFrom->account_number }}
+            (a/n {{ $budget->accountFrom->account_holder_name }})
+            @endif
+            @if($budget->account_to)
+            <br><strong>Transfer Ke:</strong> {{ $budget->account_to }}
+            @endif
         </div>
         @endif
 
@@ -341,7 +346,17 @@
 
             <div class="signature-box">
                 <div class="signature-label">Kasir</div>
-                <div class="signature-name">_____________</div>
+                 <div class="signature-name">
+                    @php
+                        $cashierApproval = $budget->approvals->where('role', 'cashier')->first();
+                    @endphp
+                    @if($cashierApproval && $cashierApproval->approver)
+                        {{ $cashierApproval->approver->name }}
+                        <br><small style="font-size: 8pt;">{{ $cashierApproval->approved_at ? $cashierApproval->approved_at->format('d/m/Y H:i') : '' }}</small>
+                    @else
+                        _____________
+                    @endif
+                </div>
             </div>
         </div>
 

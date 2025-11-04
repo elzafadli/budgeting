@@ -17,13 +17,15 @@ return new class extends Migration
             $table->date('end_date')->nullable(); // end date (nullable)
             $table->decimal('amount', 15, 2)->default(0); // project value
             $table->text('description')->nullable(); // optional description
-            $table->enum('status', ['in_progress', 'canceled', 'completed'])->default('in_progress'); // project status
+            $table->enum('status', ['in_progress', 'canceled', 'invoice', 'completed'])->default('in_progress'); // project status
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('projects');
+        Schema::enableForeignKeyConstraints();
     }
 };

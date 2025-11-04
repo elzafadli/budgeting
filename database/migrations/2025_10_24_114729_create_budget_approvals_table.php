@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('budget_id')->constrained()->onDelete('cascade');
             $table->foreignId('approver_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->enum('role', ['project_manager', 'finance']);
+            $table->enum('role', ['project_manager', 'finance', 'cashier']);
             $table->integer('level');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->text('note')->nullable();

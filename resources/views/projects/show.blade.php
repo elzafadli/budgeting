@@ -84,38 +84,41 @@
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th class="small">Request No</th>
-                                        <th class="small">Title</th>
-                                        <th class="small">Requestor</th>
-                                        <th class="small">Amount</th>
-                                        <th class="small">Status</th>
-                                        <th class="small">Action</th>
+                                        <th class="small">No. Pengajuan</th>
+                                        <th class="small">No. Realisasi</th>
+                                        <th class="small">Dibuat Oleh</th>
+                                        <th class="small">Total Pengajuan</th>
+                                        <th class="small">Total Realisasi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($project->budgets as $budget)
+                                        @php
+                                            $realisasi = $budget->realisasiBudgets->first();
+                                        @endphp
                                         <tr>
-                                            <td class="small">{{ $budget->request_no }}</td>
-                                            <td class="small">{{ $budget->title }}</td>
+                                            <td class="small">
+                                                <a href="{{ route('budgets.show', $budget) }}" class="text-decoration-none">
+                                                    {{ $budget->request_no }}
+                                                </a>
+                                            </td>
+                                            <td class="small">
+                                                @if($realisasi)
+                                                    <a href="{{ route('realisasi-budgets.show', $realisasi) }}" class="text-decoration-none">
+                                                        {{ $realisasi->realisasi_no }}
+                                                    </a>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
                                             <td class="small">{{ $budget->user->name }}</td>
                                             <td class="small">Rp {{ number_format($budget->total_amount, 0, ',', '.') }}</td>
                                             <td class="small">
-                                                @if($budget->status === 'draft')
-                                                    <span class="badge bg-secondary">Draft</span>
-                                                @elseif($budget->status === 'submitted')
-                                                    <span class="badge bg-primary">Submitted</span>
-                                                @elseif($budget->status === 'pm_approved')
-                                                    <span class="badge bg-info">PM Approved</span>
-                                                @elseif($budget->status === 'finance_approved')
-                                                    <span class="badge bg-success">Finance Approved</span>
-                                                @elseif($budget->status === 'rejected')
-                                                    <span class="badge bg-danger">Rejected</span>
+                                                @if($realisasi)
+                                                    Rp {{ number_format($realisasi->total_amount, 0, ',', '.') }}
                                                 @else
-                                                    <span class="badge bg-dark">Completed</span>
+                                                    <span class="text-muted">-</span>
                                                 @endif
-                                            </td>
-                                            <td class="small">
-                                                <a href="{{ route('budgets.show', $budget) }}" class="btn btn-sm btn-outline-primary">View</a>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -135,16 +138,12 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <div class="d-flex justify-content-between mb-1">
-                            <span class="small text-muted">Total Budgets:</span>
+                            <span class="small text-muted">Total Pengajuan:</span>
                             <strong class="small">{{ $project->budgets->count() }}</strong>
                         </div>
                         <div class="d-flex justify-content-between mb-1">
-                            <span class="small text-muted">Total Budget Amount:</span>
+                            <span class="small text-muted">Total Pengajuan:</span>
                             <strong class="small">Rp {{ number_format($project->budgets->sum('total_amount'), 0, ',', '.') }}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span class="small text-muted">Total Approved:</span>
-                            <strong class="small text-success">Rp {{ number_format($project->budgets->sum('approved_total'), 0, ',', '.') }}</strong>
                         </div>
                     </div>
 
@@ -162,16 +161,20 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <span class="small text-muted">Draft:</span>
-                        <span class="badge bg-secondary float-end">{{ $project->budgets->where('status', 'draft')->count() }}</span>
-                    </div>
-                    <div class="mb-2">
                         <span class="small text-muted">Submitted:</span>
                         <span class="badge bg-primary float-end">{{ $project->budgets->where('status', 'submitted')->count() }}</span>
                     </div>
                     <div class="mb-2">
-                        <span class="small text-muted">Approved:</span>
-                        <span class="badge bg-success float-end">{{ $project->budgets->whereIn('status', ['finance_approved', 'completed'])->count() }}</span>
+                        <span class="small text-muted">Finance Approved:</span>
+                        <span class="badge bg-success float-end">{{ $project->budgets->whereIn('status', ['finance_approved'])->count() }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="small text-muted">PM Approved:</span>
+                        <span class="badge bg-success float-end">{{ $project->budgets->whereIn('status', ['pm_approved'])->count() }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="small text-muted">Completed:</span>
+                        <span class="badge bg-success float-end">{{ $project->budgets->where('status', 'completed')->count() }}</span>
                     </div>
                     <div class="mb-2">
                         <span class="small text-muted">Rejected:</span>

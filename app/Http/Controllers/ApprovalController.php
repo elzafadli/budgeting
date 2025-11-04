@@ -80,7 +80,7 @@ class ApprovalController extends Controller
                     'approved_at' => now(),
                 ]);
 
-                $budget->update(['status' => 'completed']);
+                $budget->update(['status' => 'finance_approved']);
 
                 DB::commit();
                 return redirect()->route('approvals.index')->with('success', 'Budget approved successfully.');

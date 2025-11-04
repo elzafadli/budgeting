@@ -34,7 +34,7 @@
                         @enderror
                     </div>
 
-                    <div class="col-md-6">
+                    <!-- <div class="col-md-6">
                         <label for="account_type" class="form-label small required">Tipe</label>
                         <select class="form-select form-select-sm @error('account_type') is-invalid @enderror"
                                 id="account_type" name="account_type" required>
@@ -48,7 +48,7 @@
                         @error('account_type')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="row mb-3">

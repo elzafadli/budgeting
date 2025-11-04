@@ -10,7 +10,7 @@
         </div>
         <div class="col-md-4 text-end">
             <a href="{{ route('budgets.print', $budget) }}" class="btn btn-sm btn-primary me-2" target="_blank">
-                <i class="bi bi-printer"></i> Print PDF
+                <i class="bi bi-printer"></i> Print
             </a>
             <a href="{{ route('budgets.index') }}" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back
@@ -71,16 +71,23 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label small text-muted mb-1">Rekening Bank</label>
+                            <label class="form-label small text-muted mb-1">Transfer Dari</label>
                             <div class="small">
-                                @if($budget->accountBank)
-                                    {{ $budget->accountBank->bank_name }} - {{ $budget->accountBank->account_number }}
-                                    <br><span class="text-muted">a/n {{ $budget->accountBank->account_holder_name }}</span>
+                                @if($budget->accountFrom)
+                                    {{ $budget->accountFrom->bank_name }} - {{ $budget->accountFrom->account_number }}
+                                    <br><span class="text-muted">a/n {{ $budget->accountFrom->account_holder_name }}</span>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted mb-1">Transfer Ke</label>
+                            <div class="small">{{ $budget->account_to ?? '-' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label small text-muted mb-1">Pemohon</label>
                             <div class="small">{{ $budget->user->name }}</div>
@@ -114,40 +121,6 @@
                     </div>
                 </div>
             </div>
-
-            @if($budget->files->count() > 0)
-            <div class="card mb-3">
-                <div class="card-header py-2">
-                    <h6 class="mb-0 small">Attached Files</h6>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        @foreach($budget->files as $file)
-                        <div class="list-group-item px-0 py-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="bi bi-file-earmark-{{ 
-                                        str_contains($file->file_type, 'pdf') ? 'pdf' : 
-                                        (str_contains($file->file_type, 'word') || str_contains($file->file_type, 'document') ? 'word' : 
-                                        (str_contains($file->file_type, 'excel') || str_contains($file->file_type, 'spreadsheet') ? 'excel' : 
-                                        (str_contains($file->file_type, 'image') ? 'image' : 'text'))) 
-                                    }}"></i>
-                                    <strong class="small">{{ $file->file_name }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ $file->file_size_formatted }} • Uploaded {{ $file->created_at->format('d M Y H:i') }}</small>
-                                </div>
-                                <div>
-                                    <a href="{{ asset('storage/' . $file->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-download"></i> Download
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-            @endif
 
             <div class="card mb-3">
                 <div class="card-header py-2">
@@ -231,19 +204,62 @@
         </div>
 
         <div class="col-md-4">
-            @if(Auth::user()->role === 'admin' && Auth::user()->id === $budget->user_id)
+            @if($budget->files->count() > 0)
+            <div class="card mb-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0 small">Attached Files</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        @foreach($budget->files as $file)
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-file-earmark-{{
+                                        str_contains($file->file_type, 'pdf') ? 'pdf' :
+                                        (str_contains($file->file_type, 'word') || str_contains($file->file_type, 'document') ? 'word' :
+                                        (str_contains($file->file_type, 'excel') || str_contains($file->file_type, 'spreadsheet') ? 'excel' :
+                                        (str_contains($file->file_type, 'image') ? 'image' : 'text')))
+                                    }}"></i>
+                                    <strong class="small">{{ $file->file_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ $file->file_size_formatted }} • Uploaded {{ $file->created_at->format('d M Y H:i') }}</small>
+                                </div>
+                                <div>
+                                    <a href="{{ asset('storage/' . $file->file_path) }}" target="_blank" class="btn btn-sm btn-outline-info me-1">
+                                        Preview
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            @if((Auth::user()->role === 'admin' || Auth::user()->role === 'cashier') && Auth::user()->id === $budget->user_id)
                 <div class="card mb-3">
                     <div class="card-header py-2">
                         <h6 class="mb-0 small">Actions</h6>
                     </div>
                     <div class="card-body">
-                        @if($budget->status === 'draft')
+                        @if(in_array($budget->status, ['draft', 'rejected']))
+                            <a href="{{ route('budgets.edit', $budget) }}" class="btn btn-sm btn-warning w-100 mb-2">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                        @endif
+
+                        @if(in_array($budget->status, ['draft', 'rejected']))
                             <form action="{{ route('budgets.submit', $budget) }}" method="POST" class="mb-2">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-primary w-100" onclick="return confirm('Submit this budget request?')">
-                                    <i class="bi bi-send"></i> Submit for Approval
+                                    <i class="bi bi-send"></i> {{ $budget->status === 'rejected' ? 'Resubmit' : 'Submit' }} for Approval
                                 </button>
                             </form>
+                        @endif
+
+                        @if(in_array($budget->status, ['draft', 'rejected']))
                             <form action="{{ route('budgets.destroy', $budget) }}" method="POST">
                                 @csrf
                                 @method('DELETE')
@@ -256,14 +272,27 @@
                 </div>
             @endif
 
-            @if(Auth::user()->role === 'finance' && $budget->status === 'finance_approved')
+            @if(Auth::user()->role === 'cashier' && $budget->status === 'finance_approved')
+                <div class="card mb-3">
+                    <div class="card-header py-2">
+                        <h6 class="mb-0 small">Cashier Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <a href="{{ route('budgets.cashier-edit', $budget) }}" class="btn btn-sm btn-success w-100">
+                            <i class="bi bi-cash-coin"></i> Process Payment
+                        </a>
+                    </div>
+                </div>
+            @endif
+
+            @if(Auth::user()->role === 'admin' && $budget->status === 'finance_approved')
                 <div class="card mb-3">
                     <div class="card-header py-2">
                         <h6 class="mb-0 small">Finance Actions</h6>
                     </div>
                     <div class="card-body">
                         <a href="{{ route('realizations.create', $budget) }}" class="btn btn-sm btn-success w-100">
-                            <i class="bi bi-cash-coin"></i> Create Realization
+                            <i class="bi bi-cash-coin"></i> Buat Realisasi
                         </a>
                     </div>
                 </div>
@@ -280,6 +309,77 @@
                         </a>
                     </div>
                 </div>
+            @endif
+
+            @php
+                $userRole = Auth::user()->role;
+                $canApprove = false;
+                $pendingApproval = null;
+
+                if (in_array($userRole, ['project_manager', 'finance'])) {
+                    foreach($budget->approvals as $approval) {
+                        if ($approval->status === 'pending' &&
+                            (($userRole === 'project_manager' && $approval->role === 'project_manager') ||
+                             ($userRole === 'finance' && $approval->role === 'finance'))) {
+                            $canApprove = true;
+                            $pendingApproval = $approval;
+                            break;
+                        }
+                    }
+                }
+            @endphp
+
+            @if($canApprove && $pendingApproval)
+            <div class="card mb-3">
+                <div class="card-header py-2 bg-warning bg-opacity-10">
+                    <h6 class="mb-0 small text-warning"><i class="bi bi-exclamation-triangle"></i> Pending Your Approval</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-3">This budget request requires your approval as <strong>{{ ucfirst(str_replace('_', ' ', $pendingApproval->role)) }}</strong>.</p>
+
+                    <form action="{{ route('approvals.approve', $budget) }}" method="POST" class="d-inline">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="approve_note" class="form-label small">Note (Optional)</label>
+                            <textarea class="form-control form-control-sm" id="approve_note" name="note" rows="2" placeholder="Add approval note..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-success me-2" onclick="return confirm('Approve this budget request?')">
+                            <i class="bi bi-check-circle"></i> Approve
+                        </button>
+                    </form>
+
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <i class="bi bi-x-circle"></i> Reject
+                    </button>
+
+                    <!-- Reject Modal -->
+                    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form action="{{ route('approvals.reject', $budget) }}" method="POST">
+                                    @csrf
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="rejectModalLabel">Reject Budget Request</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="reject_note" class="form-label">Reason for Rejection <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" id="reject_note" name="note" rows="3" required placeholder="Please provide a reason for rejection..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-x-circle"></i> Reject Budget
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             @endif
 
             <div class="card">

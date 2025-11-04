@@ -32,7 +32,7 @@ class AccountController extends Controller
     {
         $validated = $request->validate([
             'account_description' => 'required|string|max:255',
-            'account_type' => 'required|in:asset,liability,equity,revenue,expense',
+            // 'account_type' => 'required|in:asset,liability,equity,revenue,expense',
         ]);
 
         // Generate auto account_number based on count
@@ -77,7 +77,7 @@ class AccountController extends Controller
     {
         $validated = $request->validate([
             'account_description' => 'required|string|max:255',
-            'account_type' => 'required|in:asset,liability,equity,revenue,expense',
+            // 'account_type' => 'required|in:asset,liability,equity,revenue,expense',
         ]);
 
         // Keep existing values for fields not in form

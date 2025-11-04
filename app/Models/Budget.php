@@ -10,7 +10,8 @@ class Budget extends Model
         'request_no',
         'user_id',
         'project_id',
-        'account_bank_id',
+        'account_from_id',
+        'account_to',
         'document_date',
         'description',
         'total_amount',
@@ -34,9 +35,9 @@ class Budget extends Model
         return $this->belongsTo(Project::class);
     }
 
-    public function accountBank()
+    public function accountFrom()
     {
-        return $this->belongsTo(AccountBank::class);
+        return $this->belongsTo(AccountBank::class, 'account_from_id');
     }
 
     public function items()
