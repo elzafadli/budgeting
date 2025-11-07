@@ -113,7 +113,7 @@ class BudgetController extends Controller
 
     public function show(Budget $budget)
     {
-        $budget->load(['user', 'project', 'accountFrom', 'items.account', 'approvals.approver', 'realizations', 'realisasiBudgets', 'files']);
+        $budget->load(['user', 'project', 'accountFrom', 'items.account', 'approvals.approver', 'realisasiBudgets', 'files']);
         return view('budgets.show', compact('budget'));
     }
 

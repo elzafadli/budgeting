@@ -154,30 +154,6 @@
                 </div>
             </div>
 
-            @if($budget->realizations->count() > 0)
-                <div class="card mb-3">
-                    <div class="card-header py-2">
-                        <h6 class="mb-0 small">Realizations</h6>
-                    </div>
-                    <div class="card-body">
-                        @foreach($budget->realizations as $realization)
-                            <div class="border-bottom pb-2 mb-2">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <strong class="small">{{ $realization->realization_no }}</strong><br>
-                                        <small class="text-muted">{{ $realization->realization_date->format('d M Y') }}</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <strong class="small text-success">Rp {{ number_format($realization->total_realized, 0, ',', '.') }}</strong><br>
-                                        <a href="{{ route('realizations.show', $realization) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
             @if($budget->realisasiBudgets->count() > 0)
                 <div class="card mb-3">
                     <div class="card-header py-2">

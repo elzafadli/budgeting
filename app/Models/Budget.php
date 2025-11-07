@@ -50,11 +50,6 @@ class Budget extends Model
         return $this->hasMany(BudgetApproval::class);
     }
 
-    public function realizations()
-    {
-        return $this->hasMany(BudgetRealization::class);
-    }
-
     public function realisasiBudgets()
     {
         return $this->hasMany(RealisasiBudget::class);
