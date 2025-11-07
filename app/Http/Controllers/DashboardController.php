@@ -11,9 +11,9 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
+
         $stats = [];
-        
+
         if ($user->role === 'admin') {
             $stats = [
                 'total' => Budget::where('user_id', $user->id)->count(),
@@ -22,7 +22,7 @@ class DashboardController extends Controller
                 'approved' => Budget::where('user_id', $user->id)->whereIn('status', ['pm_approved', 'finance_approved', 'completed'])->count(),
                 'rejected' => Budget::where('user_id', $user->id)->where('status', 'rejected')->count(),
             ];
-            
+
             $recentBudgets = Budget::where('user_id', $user->id)
                 ->with(['items', 'approvals'])
                 ->orderBy('created_at', 'desc')
@@ -42,7 +42,7 @@ class DashboardController extends Controller
                     ->where('status', 'rejected')
                     ->count(),
             ];
-            
+
             $recentBudgets = Budget::whereIn('status', ['submitted', 'pm_approved'])
                 ->with(['user', 'items', 'approvals'])
                 ->orderBy('created_at', 'desc')
@@ -62,14 +62,14 @@ class DashboardController extends Controller
                     ->where('status', 'rejected')
                     ->count(),
             ];
-            
+
             $recentBudgets = Budget::whereIn('status', ['pm_approved', 'finance_approved', 'completed'])
-                ->with(['user', 'items', 'approvals', 'realizations'])
+                ->with(['user', 'items', 'approvals', 'realisasiBudgets'])
                 ->orderBy('created_at', 'desc')
                 ->limit(5)
                 ->get();
         }
-        
+
         return view('dashboard', compact('stats', 'recentBudgets'));
     }
 }

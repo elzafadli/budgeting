@@ -139,9 +139,9 @@ class BudgetController extends Controller
 
     public function update(Request $request, Budget $budget)
     {
-        // Only allow updating draft or rejected budgets
-        if (!in_array($budget->status, ['draft', 'rejected'])) {
-            return back()->with('error', 'Only draft or rejected budgets can be updated.');
+        // Only allow updating draft, rejected, or canceled budgets
+        if (!in_array($budget->status, ['draft', 'rejected', 'canceled'])) {
+            return back()->with('error', 'Only draft, rejected, or canceled budgets can be updated.');
         }
 
         // Only allow owner to update
@@ -171,14 +171,21 @@ class BudgetController extends Controller
             }
 
             // Update budget
-            $budget->update([
+            $updateData = [
                 'project_id' => $validated['project_id'] ?? null,
                 'account_from_id' => $validated['account_from_id'] ?? null,
                 'account_to' => $validated['account_to'] ?? null,
                 'document_date' => $validated['document_date'],
                 'description' => $validated['description'],
                 'total_amount' => $totalAmount,
-            ]);
+            ];
+
+            // If budget was canceled, reset status to draft
+            if ($budget->status === 'rejected') {
+                $updateData['status'] = 'draft';
+            }
+
+            $budget->update($updateData);
 
             // Delete old items and create new ones
             $budget->items()->delete();

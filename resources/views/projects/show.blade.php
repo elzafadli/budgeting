@@ -37,7 +37,7 @@
                             <td class="small">{{ $project->name }}</td>
                         </tr>
                         <tr>
-                            <th class="small">Vendor:</th>
+                            <th class="small">User:</th>
                             <td class="small">{{ $project->vendor }}</td>
                         </tr>
                         <tr>

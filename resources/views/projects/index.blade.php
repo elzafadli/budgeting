@@ -23,7 +23,7 @@
                         <tr>
                             <th class="small">Project No.</th>
                             <th class="small">Nama</th>
-                            <th class="small">Vendor</th>
+                            <th class="small">User</th>
                             <th class="small">Tgl. Mulai</th>
                             <th class="small">Tgl. Selesai</th>
                             <th class="small">Total Anggaran</th>

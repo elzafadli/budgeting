@@ -59,6 +59,6 @@ class User extends Authenticatable
 
     public function realizations()
     {
-        return $this->hasMany(BudgetRealization::class, 'realized_by');
+        return $this->hasMany(RealisasiBudget::class, 'realized_by');
     }
 }

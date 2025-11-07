@@ -26,7 +26,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label for="vendor" class="form-label small required">Vendor</label>
+                        <label for="vendor" class="form-label small required">User</label>
                         <input type="text" class="form-control form-control-sm @error('vendor') is-invalid @enderror"
                             id="vendor" name="vendor" value="{{ old('vendor', $project->vendor ?? '') }}" required>
                         @error('vendor')

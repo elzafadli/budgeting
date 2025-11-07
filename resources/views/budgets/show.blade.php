@@ -226,7 +226,7 @@
                             </a>
                         @endif
 
-                        @if(in_array($budget->status, ['draft', 'rejected']))
+                        @if(in_array($budget->status, ['draft']))
                             <form action="{{ route('budgets.submit', $budget) }}" method="POST" class="mb-2">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-primary w-100" onclick="return confirm('Submit this budget request?')">
