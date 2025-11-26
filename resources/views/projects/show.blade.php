@@ -5,17 +5,14 @@
 @section('content')
 <div class="container-fluid px-4">
     <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="h4"><i class="bi bi-folder"></i> Project Detail</h1>
-        </div>
-        <div class="col-md-4 text-end">
+        <div class="col-12 text-end">
             <a href="{{ route('projects.index') }}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back
+                <i class="bi bi-arrow-left"></i> Kembali
             </a>
             @if(Auth::user()->role === 'admin')
-                <a href="{{ route('projects.edit', $project) }}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-pencil"></i> Edit
-                </a>
+            <a href="{{ route('projects.edit', $project) }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-pencil"></i> Ubah
+            </a>
             @endif
         </div>
     </div>
@@ -24,16 +21,16 @@
         <div class="col-md-8">
             <div class="card mb-3">
                 <div class="card-header py-2">
-                    <h6 class="mb-0 small">Project Information</h6>
+                    <h6 class="small mb-0">Detail Project </h6>
                 </div>
                 <div class="card-body">
                     <table class="table table-sm table-borderless mb-0">
                         <tr>
-                            <th width="200" class="small">Project Number:</th>
+                            <th width="200" class="small">No. Project:</th>
                             <td class="small">{{ $project->no_project }}</td>
                         </tr>
                         <tr>
-                            <th class="small">Project Name:</th>
+                            <th class="small">Nama Project:</th>
                             <td class="small">{{ $project->name }}</td>
                         </tr>
                         <tr>
@@ -41,19 +38,19 @@
                             <td class="small">{{ $project->vendor }}</td>
                         </tr>
                         <tr>
-                            <th class="small">Start Date:</th>
+                            <th class="small">Tanggal Mulai:</th>
                             <td class="small">{{ $project->start_date->format('d M Y') }}</td>
                         </tr>
                         <tr>
-                            <th class="small">End Date:</th>
-                            <td class="small">{{ $project->end_date ? $project->end_date->format('d M Y') : 'Ongoing' }}</td>
+                            <th class="small">Tanggal Berakhir:</th>
+                            <td class="small">{{ $project->end_date ? $project->end_date->format('d M Y') : '-' }}</td>
                         </tr>
                         <tr>
-                            <th class="small">Project Value:</th>
+                            <th class="small">Total Anggaran:</th>
                             <td class="small"><strong>Rp {{ number_format($project->amount, 0, ',', '.') }}</strong></td>
                         </tr>
                         <tr>
-                            <th class="small">Status:</th>
+                            <th class="small">Status Project:</th>
                             <td class="small">
                                 <span class="badge bg-{{ $project->status_badge }}">
                                     {{ ucfirst(str_replace('_', ' ', $project->status)) }}
@@ -62,12 +59,30 @@
                         </tr>
                         @if($project->description)
                         <tr>
-                            <th class="small">Description:</th>
+                            <th class="small">Deskripsi:</th>
                             <td class="small">{{ $project->description }}</td>
                         </tr>
                         @endif
+                        @if($project->files->count() > 0)
                         <tr>
-                            <th class="small">Created:</th>
+                            <th class="small">Lampiran:</th>
+                            <td class="small">
+                                <ul class="list-unstyled mb-0">
+                                    @foreach($project->files as $file)
+                                    <li class="mb-1">
+                                        <i class="bi bi-file-earmark"></i>
+                                        <a href="{{ asset('storage/' . $file->file_path) }}" target="_blank" class="text-decoration-none">
+                                            {{ $file->file_name }}
+                                        </a>
+                                        <span class="text-muted">({{ $file->file_size_formatted }})</span>
+                                    </li>
+                                    @endforeach
+                                </ul>
+                            </td>
+                        </tr>
+                        @endif
+                        <tr>
+                            <th class="small">Dibuat:</th>
                             <td class="small">{{ $project->created_at->format('d M Y H:i') }}</td>
                         </tr>
                     </table>
@@ -75,58 +90,76 @@
             </div>
 
             @if($project->budgets->count() > 0)
-                <div class="card">
-                    <div class="card-header py-2">
-                        <h6 class="mb-0 small">Related Budgets</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="small">No. Pengajuan</th>
-                                        <th class="small">No. Realisasi</th>
-                                        <th class="small">Dibuat Oleh</th>
-                                        <th class="small">Total Pengajuan</th>
-                                        <th class="small">Total Realisasi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($project->budgets as $budget)
-                                        @php
-                                            $realisasi = $budget->realisasiBudgets->first();
-                                        @endphp
-                                        <tr>
-                                            <td class="small">
-                                                <a href="{{ route('budgets.show', $budget) }}" class="text-decoration-none">
-                                                    {{ $budget->request_no }}
-                                                </a>
-                                            </td>
-                                            <td class="small">
-                                                @if($realisasi)
-                                                    <a href="{{ route('realisasi-budgets.show', $realisasi) }}" class="text-decoration-none">
-                                                        {{ $realisasi->realisasi_no }}
-                                                    </a>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td class="small">{{ $budget->user->name }}</td>
-                                            <td class="small">Rp {{ number_format($budget->total_amount, 0, ',', '.') }}</td>
-                                            <td class="small">
-                                                @if($realisasi)
-                                                    Rp {{ number_format($realisasi->total_amount, 0, ',', '.') }}
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+            <div class="card">
+                <div class="card-header py-2">
+                    <h6 class="mb-0 small">Daftar Pengajuan</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="small">No. Pengajuan</th>
+                                    <th class="small">No. Realisasi</th>
+                                    <th class="small">Dibuat Oleh</th>
+                                    <th class="small">Total Pengajuan</th>
+                                    <th class="small">Total Realisasi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($project->budgets as $budget)
+                                @php
+                                $realisasi = $budget->realisasiBudgets->first();
+                                $isCashierBudget = $budget->user->role === 'cashier';
+                                $canViewAmount = in_array(Auth::user()->role, ['cashier', 'finance']) || !$isCashierBudget;
+                                @endphp
+                                <tr>
+                                    <td class="small">
+                                        <a href="{{ route('budgets.show', $budget) }}" class="text-decoration-none" target="_blank">
+                                            {{ $budget->request_no }}
+                                        </a>
+                                        @if($budget->description)
+                                        <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $budget->description }}"></i>
+                                        @endif
+                                    </td>
+                                    <td class="small">
+                                        @if($realisasi)
+                                        <a href="{{ route('realisasi-budgets.show', $realisasi) }}" class="text-decoration-none" target="_blank">
+                                            {{ $realisasi->realisasi_no }}
+                                        </a>
+                                        @if($realisasi->description)
+                                        <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $realisasi->description }}"></i>
+                                        @endif
+                                        @else
+                                        <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="small">{{ $budget->user->name }}</td>
+                                    <td class="small">
+                                        @if($canViewAmount)
+                                            Rp {{ number_format($budget->total_amount, 0, ',', '.') }}
+                                        @else
+                                            <span class="badge bg-warning text-dark">Restricted</span>
+                                        @endif
+                                    </td>
+                                    <td class="small">
+                                        @if($realisasi)
+                                            @if($canViewAmount)
+                                                Rp {{ number_format($realisasi->total_amount, 0, ',', '.') }}
+                                            @else
+                                                <span class="badge bg-warning text-dark">Restricted</span>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+            </div>
             @endif
         </div>
 
@@ -148,9 +181,9 @@
                     </div>
 
                     @if(Auth::user()->role === 'admin')
-                        <a href="{{ route('budgets.create', ['project' => $project->id]) }}" class="btn btn-sm btn-primary w-100">
-                            <i class="bi bi-plus-circle"></i> Create Budget for this Project
-                        </a>
+                    <a href="{{ route('budgets.create', ['project' => $project->id]) }}" class="btn btn-sm btn-primary w-100">
+                        <i class="bi bi-plus-circle"></i> Buat Pengajuan
+                    </a>
                     @endif
                 </div>
             </div>

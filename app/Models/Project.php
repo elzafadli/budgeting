@@ -35,6 +35,14 @@ class Project extends Model
     }
 
     /**
+     * Get all files for this project
+     */
+    public function files()
+    {
+        return $this->hasMany(ProjectFile::class);
+    }
+
+    /**
      * Get total budget amount for this project
      */
     public function getTotalBudgetAttribute()

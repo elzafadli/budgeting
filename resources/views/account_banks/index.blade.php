@@ -7,11 +7,9 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title">Rekening Bank</h5>
-            @if(Auth::user()->role === 'admin')
             <a href="{{ route('account-banks.create') }}" class="btn btn-sm btn-primary">
                 <i class="bi bi-plus-circle me-1"></i> Tambah
             </a>
-            @endif
         </div>
         <div class="card-body">
             @if($accountBanks->count() > 0)

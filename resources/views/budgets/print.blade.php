@@ -13,48 +13,57 @@
 
         @page {
             size: A4;
-            margin: 10mm;
+            margin: 0;
         }
 
         body {
             font-family: Arial, sans-serif;
-            font-size: 11pt;
+            font-size: 10pt;
             line-height: 1.3;
             color: #000;
+            margin: 0;
+            padding: 15mm 10mm;
         }
 
         .container {
             width: 100%;
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 5mm;
+            margin: 0;
+            padding: 0;
         }
 
         /* Header */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            width: 100%;
             margin-bottom: 10px;
             border-bottom: 2px solid #000;
             padding-bottom: 5px;
         }
 
+        .header table {
+            width: 100%;
+            border: none;
+        }
+
+        .header td {
+            border: none;
+            padding: 0;
+            vertical-align: top;
+        }
+
         .company-logo {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
         }
 
         .company-name {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: bold;
             text-align: center;
-            flex: 1;
         }
 
         .doc-info {
             text-align: right;
-            font-size: 9pt;
+            font-size: 8pt;
         }
 
         .doc-info div {
@@ -81,20 +90,20 @@
             margin-bottom: 15px;
         }
 
-        .info-row {
-            display: flex;
-            margin-bottom: 5px;
+        .info-section table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-section td {
+            border: none;
             border-bottom: 1px solid #000;
-            padding: 3px 0;
+            padding: 5px 8px;
         }
 
         .info-label {
             width: 150px;
             font-weight: bold;
-        }
-
-        .info-value {
-            flex: 1;
         }
 
         /* Table */
@@ -134,29 +143,36 @@
 
         /* Signature Section */
         .signature-section {
-            margin-top: 30px;
-            display: flex;
-            justify-content: space-between;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .signature-section table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
         .signature-box {
-            width: 23%;
+            width: 25%;
             text-align: center;
             border: 1px solid #000;
             padding: 5px;
-            min-height: 80px;
+            height: 80px;
+            vertical-align: top;
         }
 
         .signature-label {
-            font-size: 9pt;
+            font-size: 8pt;
             font-weight: bold;
-            margin-bottom: 50px;
+            margin-bottom: 40px;
+            display: block;
         }
 
         .signature-name {
-            font-size: 9pt;
+            font-size: 8pt;
             border-top: 1px solid #000;
             padding-top: 3px;
+            margin-top: 40px;
         }
 
         /* Print styles */
@@ -181,20 +197,30 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="company-logo">
-                <!-- Logo placeholder - you can add your company logo here -->
-                <div style="width: 80px; height: 80px; border: 2px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10pt; text-align: center;">
-                    LOGO
-                </div>
-            </div>
-            <div class="company-name">
-                PT. TIARA JAYA TUNGGAL MANDIRI
-            </div>
-            <div class="doc-info">
-                <div><strong>No:</strong> {{ $budget->request_no }}</div>
-                <div><strong>Tgl:</strong> {{ $budget->document_date->format('d/m/Y') }}</div>
-                <div><strong>Lampiran:</strong> 1</div>
-            </div>
+            <table>
+                <tr>
+                    <td style="width: 80px;">
+                        <div class="company-logo">
+                            <!-- Logo placeholder -->
+                            <div style="width: 70px; height: 70px; border: 2px solid #000; border-radius: 50%; text-align: center; line-height: 70px; font-size: 9pt;">
+                                LOGO
+                            </div>
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        <div class="company-name">
+                            PT. TIARA JAYA TUNGGAL MANDIRI
+                        </div>
+                    </td>
+                    <td style="width: 150px;">
+                        <div class="doc-info">
+                            <div><strong>No:</strong> {{ $budget->request_no }}</div>
+                            <div><strong>Tgl:</strong> {{ $budget->document_date->format('d/m/Y') }}</div>
+                            <div><strong>Lampiran:</strong> 1</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <!-- Title -->
@@ -206,27 +232,26 @@
 
         <!-- Info Section -->
         <div class="info-section">
-            <div class="info-row">
-                <div class="info-label">Dibayarkan Kepada:</div>
-                <div class="info-value">{{ $budget->user->name }}</div>
-            </div>
-
-            @if($budget->project)
-            <div class="info-row">
-                <div class="info-label">No. Project:</div>
-                <div class="info-value">{{ $budget->project->no_project }}</div>
-            </div>
-
-            <div class="info-row">
-                <div class="info-label">Nama Project:</div>
-                <div class="info-value">{{ $budget->project->name }}</div>
-            </div>
-            @endif
-
-            <div class="info-row">
-                <div class="info-label">Nama Perusahaan:</div>
-                <div class="info-value">PT. TJTM</div>
-            </div>
+            <table>
+                <tr>
+                    <td class="info-label">Dibayarkan Kepada:</td>
+                    <td>{{ $budget->user->name }}</td>
+                </tr>
+                @if($budget->project)
+                <tr>
+                    <td class="info-label">No. Project:</td>
+                    <td>{{ $budget->project->no_project }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Nama Project:</td>
+                    <td>{{ $budget->project->name }}</td>
+                </tr>
+                @endif
+                <tr>
+                    <td class="info-label">Nama Perusahaan:</td>
+                    <td>PT. TJTM</td>
+                </tr>
+            </table>
         </div>
 
         <!-- Items Table -->
@@ -239,6 +264,26 @@
                 </tr>
             </thead>
             <tbody>
+                @php
+                    $itemCount = count($budget->items);
+                    $hasLongDescription = false;
+
+                    // Check if any item has a long description (remarks with more than 100 characters)
+                    foreach($budget->items as $item) {
+                        if($item->remarks && strlen($item->remarks) > 100) {
+                            $hasLongDescription = true;
+                            break;
+                        }
+                    }
+
+                    // Determine how many dummy rows to add
+                    // If items are few (< 5) and no long descriptions, add dummy rows for formatting
+                    $dummyRowsNeeded = 0;
+                    if($itemCount < 5 && !$hasLongDescription) {
+                        $dummyRowsNeeded = 5 - $itemCount;
+                    }
+                @endphp
+
                 @foreach($budget->items as $item)
                 <tr>
                     <td class="text-center">{{ $loop->iteration }}</td>
@@ -252,14 +297,15 @@
                 </tr>
                 @endforeach
 
-                <!-- Empty rows for formatting -->
-                @for($i = count($budget->items); $i < 8; $i++)
-                <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                </tr>
-                @endfor
+                @if($dummyRowsNeeded > 0)
+                    @for($i = 0; $i < $dummyRowsNeeded; $i++)
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                    </tr>
+                    @endfor
+                @endif
 
                 <!-- Additional Info Row -->
                 <tr>
@@ -306,58 +352,59 @@
 
         <!-- Signature Section -->
         <div class="signature-section">
-            <div class="signature-box">
-                <div class="signature-label">Di Buat Oleh</div>
-                <div class="signature-name">
-                    {{ $budget->user->name }}
-                    <br><small style="font-size: 8pt;">{{ $budget->created_at->format('d/m/Y H:i') }}</small>
-                </div>
-            </div>
-
-            <div class="signature-box">
-                <div class="signature-label">Mengetahui</div>
-                <div class="signature-name">
-                    @php
-                        $financeApproval = $budget->approvals->where('role', 'finance')->first();
-                    @endphp
-                    @if($financeApproval && $financeApproval->approver)
-                        {{ $financeApproval->approver->name }}
-                        <br><small style="font-size: 8pt;">{{ $financeApproval->approved_at ? $financeApproval->approved_at->format('d/m/Y H:i') : '' }}</small>
-                    @else
-                        _____________
-                    @endif
-                </div>
-            </div>
-
-            <div class="signature-box">
-                <div class="signature-label">Menyetujui</div>
-                <div class="signature-name">
-                    @php
-                        $pmApproval = $budget->approvals->where('role', 'project_manager')->first();
-                    @endphp
-                    @if($pmApproval && $pmApproval->approver)
-                        {{ $pmApproval->approver->name }}
-                        <br><small style="font-size: 8pt;">{{ $pmApproval->approved_at ? $pmApproval->approved_at->format('d/m/Y H:i') : '' }}</small>
-                    @else
-                        _____________
-                    @endif
-                </div>
-            </div>
-
-            <div class="signature-box">
-                <div class="signature-label">Kasir</div>
-                 <div class="signature-name">
-                    @php
-                        $cashierApproval = $budget->approvals->where('role', 'cashier')->first();
-                    @endphp
-                    @if($cashierApproval && $cashierApproval->approver)
-                        {{ $cashierApproval->approver->name }}
-                        <br><small style="font-size: 8pt;">{{ $cashierApproval->approved_at ? $cashierApproval->approved_at->format('d/m/Y H:i') : '' }}</small>
-                    @else
-                        _____________
-                    @endif
-                </div>
-            </div>
+            <table>
+                <tr>
+                    <td class="signature-box">
+                        <span class="signature-label">Di Buat Oleh</span>
+                        <div class="signature-name">
+                            {{ $budget->user->name }}
+                            <br><small style="font-size: 7pt;">{{ $budget->created_at->format('d/m/Y H:i') }}</small>
+                        </div>
+                    </td>
+                    <td class="signature-box">
+                        <span class="signature-label">Mengetahui</span>
+                        <div class="signature-name">
+                            @php
+                                $financeApproval = $budget->approvals->where('role', 'finance')->first();
+                            @endphp
+                            @if($financeApproval && $financeApproval->approver)
+                                {{ $financeApproval->approver->name }}
+                                <br><small style="font-size: 7pt;">{{ $financeApproval->approved_at ? $financeApproval->approved_at->format('d/m/Y H:i') : '' }}</small>
+                            @else
+                                _____________
+                            @endif
+                        </div>
+                    </td>
+                    <td class="signature-box">
+                        <span class="signature-label">Menyetujui</span>
+                        <div class="signature-name">
+                            @php
+                                $pmApproval = $budget->approvals->where('role', 'project_manager')->first();
+                            @endphp
+                            @if($pmApproval && $pmApproval->approver)
+                                {{ $pmApproval->approver->name }}
+                                <br><small style="font-size: 7pt;">{{ $pmApproval->approved_at ? $pmApproval->approved_at->format('d/m/Y H:i') : '' }}</small>
+                            @else
+                                _____________
+                            @endif
+                        </div>
+                    </td>
+                    <td class="signature-box">
+                        <span class="signature-label">Kasir</span>
+                        <div class="signature-name">
+                            @php
+                                $cashierApproval = $budget->approvals->where('role', 'cashier')->first();
+                            @endphp
+                            @if($cashierApproval && $cashierApproval->approver)
+                                {{ $cashierApproval->approver->name }}
+                                <br><small style="font-size: 7pt;">{{ $cashierApproval->approved_at ? $cashierApproval->approved_at->format('d/m/Y H:i') : '' }}</small>
+                            @else
+                                _____________
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         @if($budget->description)
@@ -367,11 +414,5 @@
         @endif
     </div>
 
-    <script>
-        // Auto print when page loads
-        window.onload = function() {
-            window.print();
-        }
-    </script>
 </body>
 </html>

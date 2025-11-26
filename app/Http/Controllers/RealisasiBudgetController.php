@@ -4,27 +4,109 @@ namespace App\Http\Controllers;
 
 use App\Models\RealisasiBudget;
 use App\Models\RealisasiBudgetItem;
+use App\Models\RealisasiBudgetFile;
 use App\Models\Budget;
 use App\Models\Account;
+use App\Models\Project;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\Facades\DataTables;
 
 class RealisasiBudgetController extends Controller
 {
     public function index()
     {
-        $realisasiBudgets = RealisasiBudget::with(['budget', 'user', 'items'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $projects = Project::orderBy('name')->get();
+        $users = User::orderBy('name')->get();
+        return view('realisasi_budgets.index', compact('projects', 'users'));
+    }
 
-        return view('realisasi_budgets.index', compact('realisasiBudgets'));
+    public function getData(Request $request)
+    {
+        $query = RealisasiBudget::with(['user', 'budget.project'])
+            ->join('budgets', 'realisasi_budgets.budget_id', '=', 'budgets.id')
+            ->join('projects', 'budgets.project_id', '=', 'projects.id')
+            ->join('users', 'realisasi_budgets.user_id', '=', 'users.id')
+            ->select('realisasi_budgets.*', 'projects.name as project_name', 'users.name as user_name', 'budgets.request_no');
+
+        // Apply project filter
+        if ($request->has('project_id') && $request->project_id != '') {
+            $query->where('budgets.project_id', $request->project_id);
+        }
+
+        // Apply requestor filter
+        if ($request->has('user_id') && $request->user_id != '') {
+            $query->where('realisasi_budgets.user_id', $request->user_id);
+        }
+
+        // Apply status filter
+        if ($request->has('status') && $request->status != '') {
+            $query->where('realisasi_budgets.status', $request->status);
+        }
+
+        return DataTables::of($query)
+            ->addColumn('project', function ($realisasi) {
+                return '<span class="small">' . ($realisasi->budget && $realisasi->budget->project ? $realisasi->budget->project->name : '-') . '</span>';
+            })
+            ->addColumn('realisasi_no', function ($realisasi) {
+                return '<span class="small">' . $realisasi->realisasi_no . '</span>';
+            })
+            ->addColumn('realisasi_date', function ($realisasi) {
+                return '<span class="small">' . ($realisasi->realisasi_date ? date('d M Y', strtotime($realisasi->realisasi_date)) : '-') . '</span>';
+            })
+            ->addColumn('budget_no', function ($realisasi) {
+                if ($realisasi->budget) {
+                    return '<a href="' . route('budgets.show', $realisasi->budget->id) . '" target="_blank" class="small text-decoration-none">' . $realisasi->budget->request_no . '</a>';
+                }
+                return '<span class="small">-</span>';
+            })
+            ->addColumn('requestor', function ($realisasi) {
+                return '<span class="small">' . ($realisasi->user ? $realisasi->user->name : '-') . '</span>';
+            })
+            ->addColumn('amount', function ($realisasi) {
+                return '<span class="small text-end d-block">' . number_format($realisasi->total_amount, 0, ',', '.') . '</span>';
+            })
+            ->addColumn('status', function ($realisasi) {
+                $statusClass = [
+                    'draft' => 'secondary',
+                    'submitted' => 'info',
+                    'approved' => 'success',
+                    'completed' => 'dark',
+                    'rejected' => 'danger',
+                ];
+                $class = $statusClass[$realisasi->status] ?? 'secondary';
+                $statusText = ucfirst(str_replace('_', ' ', $realisasi->status));
+                return '<span class="badge bg-' . $class . '">' . $statusText . '</span>';
+            })
+            ->addColumn('action', function ($realisasi) {
+                $buttons = '
+                    <a href="' . route('realisasi-budgets.show', $realisasi) . '" class="btn btn-sm btn-outline-primary">
+                        View
+                    </a>
+                ';
+
+                // Show edit button only for document owner
+                if (auth()->id() === $realisasi->user_id) {
+                    $buttons .= '
+                        <a href="' . route('realisasi-budgets.edit', $realisasi) . '" class="btn btn-sm btn-outline-warning ms-1">
+                            Ubah
+                        </a>
+                    ';
+                }
+
+                return $buttons;
+            })
+            ->rawColumns(['project', 'realisasi_no', 'realisasi_date', 'budget_no', 'requestor', 'amount', 'status', 'action'])
+            ->make(true);
     }
 
     public function create(Request $request)
     {
         // Get budget_id from query parameter
         $budgetId = $request->query('budget_id');
-        
+
         if (!$budgetId) {
             return redirect()->route('budgets.index')
                 ->with('error', 'Budget ID is required.');
@@ -52,8 +134,11 @@ class RealisasiBudgetController extends Controller
             'items' => 'required|array|min:1',
             'items.*.budget_item_id' => 'nullable|exists:budget_items,id',
             'items.*.account_id' => 'required|exists:accounts,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.total_price' => 'required|numeric|min:0',
             'items.*.remarks' => 'nullable|string',
+            'files.*' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx',
         ]);
 
         DB::beginTransaction();
@@ -85,9 +170,27 @@ class RealisasiBudgetController extends Controller
                     'realisasi_budget_id' => $realisasiBudget->id,
                     'budget_item_id' => $item['budget_item_id'] ?? null,
                     'account_id' => $item['account_id'],
+                    'qty' => $item['qty'],
+                    'unit_price' => $item['unit_price'],
                     'total_price' => $item['total_price'],
                     'remarks' => $item['remarks'] ?? null,
                 ]);
+            }
+
+            // Handle file uploads
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    $fileName = time() . '_' . $file->getClientOriginalName();
+                    $filePath = $file->storeAs('realisasi_budgets', $fileName, 'public');
+
+                    RealisasiBudgetFile::create([
+                        'realisasi_budget_id' => $realisasiBudget->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_type' => $file->getClientMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
+                }
             }
 
             DB::commit();
@@ -101,39 +204,28 @@ class RealisasiBudgetController extends Controller
 
     public function show(RealisasiBudget $realisasiBudget)
     {
-        $realisasiBudget->load(['budget.project', 'user', 'items.account', 'items.budgetItem']);
+        $realisasiBudget->load(['budget.project', 'user', 'items.account', 'items.budgetItem', 'files']);
         return view('realisasi_budgets.show', compact('realisasiBudget'));
     }
 
     public function edit(RealisasiBudget $realisasiBudget)
     {
-        // Only allow editing draft realisasi
-        if ($realisasiBudget->status !== 'draft') {
-            return redirect()->route('realisasi-budgets.show', $realisasiBudget)
-                ->with('error', 'Only draft realization can be edited.');
-        }
-
-        // Only allow owner to edit
+        // Only allow owner to edit their own document
         if ($realisasiBudget->user_id !== auth()->id()) {
-            abort(403);
+            abort(403, 'You can only edit your own realization.');
         }
 
         $budget = $realisasiBudget->budget()->with(['items.account'])->first();
         $accounts = Account::active()->orderBy('account_number')->get();
-        
+
         return view('realisasi_budgets.form', compact('realisasiBudget', 'budget', 'accounts'));
     }
 
     public function update(Request $request, RealisasiBudget $realisasiBudget)
     {
-        // Only allow updating draft realisasi
-        if ($realisasiBudget->status !== 'draft') {
-            return back()->with('error', 'Only draft realization can be updated.');
-        }
-
-        // Only allow owner to update
+        // Only allow owner to update their own document
         if ($realisasiBudget->user_id !== auth()->id()) {
-            abort(403);
+            abort(403, 'You can only update your own realization.');
         }
 
         $validated = $request->validate([
@@ -142,6 +234,8 @@ class RealisasiBudgetController extends Controller
             'items' => 'required|array|min:1',
             'items.*.budget_item_id' => 'nullable|exists:budget_items,id',
             'items.*.account_id' => 'required|exists:accounts,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.total_price' => 'required|numeric|min:0',
             'items.*.remarks' => 'nullable|string',
         ]);
@@ -169,6 +263,8 @@ class RealisasiBudgetController extends Controller
                     'realisasi_budget_id' => $realisasiBudget->id,
                     'budget_item_id' => $item['budget_item_id'] ?? null,
                     'account_id' => $item['account_id'],
+                    'qty' => $item['qty'],
+                    'unit_price' => $item['unit_price'],
                     'total_price' => $item['total_price'],
                     'remarks' => $item['remarks'] ?? null,
                 ]);

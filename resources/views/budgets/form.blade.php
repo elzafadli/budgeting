@@ -3,16 +3,21 @@
 @section('title', isset($isCashier) && $isCashier ? 'Complete Pengajuan' : (isset($budget) ? 'Edit Budget' : 'Create Budget'))
 
 @section('content')
-<div class="container-fluid px-4">
-    <form action="{{ isset($isCashier) && $isCashier ? route('budgets.cashier-update', $budget) : (isset($budget) ? route('budgets.update', $budget) : route('budgets.store')) }}" method="POST" enctype="multipart/form-data">
+<div class="container-fluid px-4 mb-5">
+    <form action="{{ isset($isCashier) && $isCashier ? route('budgets.cashier-update', $budget) : (isset($budget) ? route('budgets.update', $budget) : route('budgets.store')) }}" method="POST" enctype="multipart/form-data" data-parsley-validate>
         @csrf
         @if(isset($budget))
         @method('PUT')
         @endif
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title">{{ isset($isCashier) && $isCashier ? 'Form Pengajuan' : 'Form Pengajuan' }}</h5>
+                <div class="mb-3 text-end">
+                    <a href="{{ isset($budget) ? route('budgets.show', $budget) : route('budgets.index') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Kembali
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
@@ -32,7 +37,7 @@
                     <div class="col-md-6">
                         <label for="project_id" class="form-label small required">Project</label>
                         <select {{ isset($isCashier) && $isCashier ? 'disabled' : 'required' }} class="form-select form-select-sm @error('project_id') is-invalid @enderror"
-                            id="project_id" name="project_id">
+                            id="project_id" name="project_id" data-parsley-required="true" data-parsley-errors-container="#project-error">
                             <option value="">-- Pilih Project --</option>
                             @foreach($projects as $project)
                             <option value="{{ $project->id }}" {{ old('project_id', isset($budget) ? $budget->project_id : $selectedProject ?? '') == $project->id ? 'selected' : '' }}>
@@ -43,11 +48,12 @@
                         @error('project_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+                        <div id="project-error"></div>
                     </div>
                     <div class="col-md-6">
                         <label for="document_date" class="form-label small required">Tanggal Dokumen</label>
                         <input type="date" class="form-control form-control-sm @error('document_date') is-invalid @enderror"
-                            id="document_date" name="document_date" value="{{ old('document_date', isset($budget) ? $budget->document_date->format('Y-m-d') : date('Y-m-d')) }}" {{ isset($isCashier) && $isCashier ? 'disabled' : 'required' }}>
+                            id="document_date" name="document_date" value="{{ old('document_date', isset($budget) ? $budget->document_date->format('Y-m-d') : date('Y-m-d')) }}" {{ isset($isCashier) && $isCashier ? 'disabled' : 'required' }} data-parsley-required="true">
                         @error('document_date')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -141,10 +147,12 @@
                     <table class="table table-sm table-bordered">
                         <thead>
                             <tr>
-                                <th class="small" width="30%">Uraian</th>
-                                <th class="small" width="35%">Kategori</th>
-                                <th class="small" width="25%">Jumlah</th>
-                                <th class="small text-center" width="10%">Aksi</th>
+                                <th class="small" width="25%">Uraian</th>
+                                <th class="small" width="30%">Kategori</th>
+                                <th class="small" width="10%">Qty</th>
+                                <th class="small" width="15%">Harga Satuan</th>
+                                <th class="small" width="15%">Total</th>
+                                <th class="small text-center" width="5%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="budget-items">
@@ -153,10 +161,10 @@
                             <tr class="budget-item">
                                 <td>
                                     <input type="text" class="form-control form-control-sm"
-                                        name="items[{{ $index }}][remarks]" value="{{ old("items.$index.remarks", $item->remarks) }}">
+                                        name="items[{{ $index }}][remarks]" value="{{ old("items.$index.remarks", $item->remarks) }}" data-parsley-required="true">
                                 </td>
                                 <td>
-                                    <select class="form-select form-select-sm" name="items[{{ $index }}][account_id]" required>
+                                    <select class="form-select form-select-sm" name="items[{{ $index }}][account_id]" required data-parsley-required="true">
                                         <option value="">-- Pilih --</option>
                                         @foreach($accounts as $account)
                                         <option value="{{ $account->id }}" {{ old("items.$index.account_id", $item->account_id) == $account->id ? 'selected' : '' }}>
@@ -166,8 +174,16 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm currency-input total-price"
-                                        name="items[{{ $index }}][total_price]" value="{{ old("items.$index.total_price", $item->total_price) }}" required>
+                                    <input type="number" class="form-control form-control-sm qty-input"
+                                        name="items[{{ $index }}][qty]" value="{{ old("items.$index.qty", $item->qty ?? 1) }}" min="1" required data-parsley-required="true" data-parsley-type="integer" data-parsley-min="1">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm currency-input unit-price"
+                                        name="items[{{ $index }}][unit_price]" value="{{ old("items.$index.unit_price", $item->unit_price ?? 0) }}" required data-parsley-required="true">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm currency-input total-price bg-light"
+                                        name="items[{{ $index }}][total_price]" value="{{ old("items.$index.total_price", $item->total_price) }}" required readonly>
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-danger remove-item">
@@ -190,7 +206,13 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm currency-input total-price" name="items[0][total_price]" required>
+                                    <input type="number" class="form-control form-control-sm qty-input" name="items[0][qty]" value="1" min="1" required>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm currency-input unit-price" name="items[0][unit_price]" required>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm currency-input total-price bg-light" name="items[0][total_price]" required readonly>
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-danger remove-item">
@@ -213,14 +235,9 @@
                 @endif
             </div>
             <div class="card-footer">
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="bi bi-save"></i> {{ isset($isCashier) && $isCashier ? 'Complete & Save' : (isset($budget) ? 'Update' : 'Simpan') }}
-                    </button>
-                    <a href="{{ isset($budget) ? route('budgets.show', $budget) : route('budgets.index') }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back
-                    </a>
-                </div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-save"></i> {{ isset($isCashier) && $isCashier ? 'Complete & Save' : (isset($budget) ? 'Update' : 'Simpan') }}
+                </button>
             </div>
         </div>
     </form>
@@ -258,7 +275,7 @@
         });
 
         // Initialize currency inputs
-        document.querySelectorAll('.total-price').forEach(input => {
+        document.querySelectorAll('.unit-price, .total-price').forEach(input => {
             initCurrencyMask(input);
         });
         updateGrandTotal();
@@ -270,10 +287,10 @@
         newRow.className = 'budget-item';
         newRow.innerHTML = `
         <td>
-            <input type="text" class="form-control form-control-sm" name="items[${itemIndex}][remarks]">
+            <input type="text" class="form-control form-control-sm" name="items[${itemIndex}][remarks]" data-parsley-required="true">
         </td>
         <td>
-            <select class="form-select form-select-sm" name="items[${itemIndex}][account_id]" required>
+            <select class="form-select form-select-sm" name="items[${itemIndex}][account_id]" required data-parsley-required="true">
                 <option value="">-- Pilih --</option>
                 @foreach($accounts as $account)
                     <option value="{{ $account->id }}">{{ $account->account_description }}</option>
@@ -281,7 +298,13 @@
             </select>
         </td>
         <td>
-            <input type="text" class="form-control form-control-sm currency-input total-price" name="items[${itemIndex}][total_price]" required>
+            <input type="number" class="form-control form-control-sm qty-input" name="items[${itemIndex}][qty]" value="1" min="1" required data-parsley-required="true" data-parsley-type="integer" data-parsley-min="1">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm currency-input unit-price" name="items[${itemIndex}][unit_price]" required data-parsley-required="true">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm currency-input total-price bg-light" name="items[${itemIndex}][total_price]" required readonly>
         </td>
         <td class="text-center">
             <button type="button" class="btn btn-sm btn-danger remove-item">
@@ -299,9 +322,15 @@
             allowClear: true
         });
 
-        // Initialize currency mask for the new price input
-        const newPrice = newRow.querySelector('.total-price');
-        initCurrencyMask(newPrice);
+        // Initialize currency mask for the new price inputs
+        const newUnitPrice = newRow.querySelector('.unit-price');
+        const newTotalPrice = newRow.querySelector('.total-price');
+        initCurrencyMask(newUnitPrice);
+        initCurrencyMask(newTotalPrice);
+
+        // Re-initialize Parsley for the form to include new fields
+        $('form[data-parsley-validate]').parsley().refresh();
+
         itemIndex++;
         updateGrandTotal();
     });
@@ -320,10 +349,27 @@
     });
 
     document.getElementById('budget-items').addEventListener('input', function(e) {
+        if (e.target.classList.contains('qty-input') || e.target.classList.contains('unit-price')) {
+            const row = e.target.closest('tr');
+            calculateRowTotal(row);
+        }
         if (e.target.classList.contains('total-price')) {
             updateGrandTotal();
         }
     });
+
+    function calculateRowTotal(row) {
+        const qtyInput = row.querySelector('.qty-input');
+        const unitPriceInput = row.querySelector('.unit-price');
+        const totalPriceInput = row.querySelector('.total-price');
+
+        const qty = parseInt(qtyInput.value) || 0;
+        const unitPrice = AutoNumeric.getNumber(unitPriceInput) || 0;
+        const total = qty * unitPrice;
+
+        AutoNumeric.set(totalPriceInput, total);
+        updateGrandTotal();
+    }
 
     function updateGrandTotal() {
         let grandTotal = 0;

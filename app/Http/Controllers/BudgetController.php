@@ -9,22 +9,82 @@ use App\Models\BudgetApproval;
 use App\Models\Project;
 use App\Models\Account;
 use App\Models\AccountBank;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\Facades\DataTables;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BudgetController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $projects = Project::orderBy('name')->get();
+        $users = User::orderBy('name')->get();
+        return view('budgets.index', compact('projects', 'users'));
+    }
 
-        $budgets = Budget::with(['user', 'items', 'approvals'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+    public function getData(Request $request)
+    {
+        $query = Budget::with(['user', 'project'])
+            ->select('budgets.*');
 
+        // Apply project filter
+        if ($request->has('project_id') && $request->project_id != '') {
+            $query->where('project_id', $request->project_id);
+        }
 
-        return view('budgets.index', compact('budgets'));
+        // Apply requestor filter
+        if ($request->has('user_id') && $request->user_id != '') {
+            $query->where('user_id', $request->user_id);
+        }
+
+        // Apply status filter
+        if ($request->has('status') && $request->status != '') {
+            $query->where('budgets.status', $request->status);
+        }
+
+        return DataTables::of($query)
+            ->addColumn('request_no', function ($budget) {
+                return '<span class="small">' . $budget->request_no . '</span>';
+            })
+            ->addColumn('requestor', function ($budget) {
+                return '<span class="small">' . ($budget->user ? $budget->user->name : '-') . '</span>';
+            })
+            ->addColumn('project', function ($budget) {
+                return '<span class="small">' . ($budget->project ? $budget->project->name : '-') . '</span>';
+            })
+            ->addColumn('amount', function ($budget) {
+                $currentUserRole = auth()->user()->role;
+                $isCashierBudget = $budget->user && $budget->user->role === 'cashier';
+                $canViewAmount = in_array($currentUserRole, ['cashier', 'finance']) || !$isCashierBudget;
+
+                if ($canViewAmount) {
+                    return '<span class="small text-end d-block">' . number_format($budget->total_amount, 0, ',', '.') . '</span>';
+                } else {
+                    return '<span class="small text-center d-block"><span class="badge bg-warning text-dark">Restricted</span></span>';
+                }
+            })
+            ->addColumn('status', function ($budget) {
+                $badges = [
+                    'draft' => '<span class="badge bg-secondary">Draft</span>',
+                    'submitted' => '<span class="badge bg-primary">Submitted</span>',
+                    'pm_approved' => '<span class="badge bg-info">PM Approved</span>',
+                    'finance_approved' => '<span class="badge bg-success">Finance Approved</span>',
+                    'rejected' => '<span class="badge bg-danger">Rejected</span>',
+                    'completed' => '<span class="badge bg-dark">Completed</span>',
+                ];
+                return '<span class="small">' . ($badges[$budget->status] ?? '<span class="badge bg-secondary">' . ucfirst($budget->status) . '</span>') . '</span>';
+            })
+            ->addColumn('date', function ($budget) {
+                return '<span class="small">' . $budget->created_at->format('d M Y') . '</span>';
+            })
+            ->addColumn('action', function ($budget) {
+                return '<span class="small"><a href="' . route('budgets.show', $budget) . '" class="btn btn-sm btn-outline-primary">View</a></span>';
+            })
+            ->rawColumns(['request_no', 'requestor', 'project', 'amount', 'status', 'date', 'action'])
+            ->make(true);
     }
 
     public function create(Request $request)
@@ -47,6 +107,8 @@ class BudgetController extends Controller
             'description' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.account_id' => 'required|exists:accounts,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.total_price' => 'required|numeric|min:0',
             'items.*.remarks' => 'nullable|string',
             'files.*' => 'nullable|file|max:2040|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
@@ -82,6 +144,8 @@ class BudgetController extends Controller
                 BudgetItem::create([
                     'budget_id' => $budget->id,
                     'account_id' => $item['account_id'],
+                    'qty' => $item['qty'],
+                    'unit_price' => $item['unit_price'],
                     'total_price' => $item['total_price'],
                     'remarks' => $item['remarks'] ?? null,
                 ]);
@@ -157,6 +221,8 @@ class BudgetController extends Controller
             'description' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.account_id' => 'required|exists:accounts,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.total_price' => 'required|numeric|min:0',
             'items.*.remarks' => 'nullable|string',
             'files.*' => 'nullable|file|max:2048|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
@@ -180,9 +246,11 @@ class BudgetController extends Controller
                 'total_amount' => $totalAmount,
             ];
 
-            // If budget was canceled, reset status to draft
+            // If budget was canceled, reset status to draft and delete approvals
             if ($budget->status === 'rejected') {
                 $updateData['status'] = 'draft';
+                // Delete old approvals to prevent duplicates
+                $budget->approvals()->delete();
             }
 
             $budget->update($updateData);
@@ -193,6 +261,8 @@ class BudgetController extends Controller
                 BudgetItem::create([
                     'budget_id' => $budget->id,
                     'account_id' => $item['account_id'],
+                    'qty' => $item['qty'],
+                    'unit_price' => $item['unit_price'],
                     'total_price' => $item['total_price'],
                     'remarks' => $item['remarks'] ?? null,
                 ]);
@@ -234,22 +304,38 @@ class BudgetController extends Controller
 
         DB::beginTransaction();
         try {
-            $budget->update(['status' => 'submitted']);
+            /** @var \App\Models\User $user */
+            $user = auth()->user();
 
-            // Create approval records
-            BudgetApproval::create([
-                'budget_id' => $budget->id,
-                'role' => 'project_manager',
-                'level' => 1,
-                'status' => 'pending',
-            ]);
+            // Check if the user is a cashier
+            if ($user->role === 'cashier') {
+                // Cashier only needs finance approval
+                $budget->update(['status' => 'submitted']);
 
-            BudgetApproval::create([
-                'budget_id' => $budget->id,
-                'role' => 'finance',
-                'level' => 2,
-                'status' => 'pending',
-            ]);
+                BudgetApproval::create([
+                    'budget_id' => $budget->id,
+                    'role' => 'finance',
+                    'level' => 1,
+                    'status' => 'pending',
+                ]);
+            } else {
+                // Regular users need both project manager and finance approval
+                $budget->update(['status' => 'submitted']);
+
+                BudgetApproval::create([
+                    'budget_id' => $budget->id,
+                    'role' => 'project_manager',
+                    'level' => 1,
+                    'status' => 'pending',
+                ]);
+
+                BudgetApproval::create([
+                    'budget_id' => $budget->id,
+                    'role' => 'finance',
+                    'level' => 2,
+                    'status' => 'pending',
+                ]);
+            }
 
             DB::commit();
             return redirect()->route('budgets.show', $budget)->with('success', 'Budget request submitted successfully.');
@@ -276,7 +362,15 @@ class BudgetController extends Controller
     public function print(Budget $budget)
     {
         $budget->load(['user', 'project', 'accountFrom', 'items.account', 'approvals.approver']);
-        return view('budgets.print', compact('budget'));
+
+        // Generate PDF
+        $pdf = Pdf::loadView('budgets.print', compact('budget'))
+            ->setPaper('a4', 'portrait');
+
+        // Download PDF with filename
+        $filename = 'Budget_' . $budget->request_no . '_' . date('Ymd') . '.pdf';
+
+        return $pdf->stream($filename);
     }
 
     public function cashierEdit(Budget $budget)

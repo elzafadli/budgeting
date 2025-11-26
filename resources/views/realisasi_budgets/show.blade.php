@@ -51,7 +51,7 @@
                         <div class="col-md-6">
                             <label class="form-label small text-muted mb-1">No. Budget</label>
                             <div class="small">
-                                <a href="{{ route('budgets.show', $realisasiBudget->budget) }}">
+                                <a href="{{ route('budgets.show', $realisasiBudget->budget) }}" target="_blank">
                                     {{ $realisasiBudget->budget->request_no }}
                                 </a>
                             </div>
@@ -67,7 +67,7 @@
                             <label class="form-label small text-muted mb-1">Project</label>
                             <div class="small">
                                 @if($realisasiBudget->budget->project)
-                                    <a href="{{ route('projects.show', $realisasiBudget->budget->project) }}">
+                                    <a href="{{ route('projects.show', $realisasiBudget->budget->project) }}" target="_blank">
                                         {{ $realisasiBudget->budget->project->no_project }} - {{ $realisasiBudget->budget->project->name }}
                                     </a>
                                 @else
@@ -112,9 +112,11 @@
                         <table class="table table-sm table-bordered mb-0">
                             <thead>
                                 <tr>
-                                    <th class="small" width="35%">Kategori</th>
-                                    <th class="small" width="30%">Uraian</th>
-                                    <th class="small" width="25%">Jumlah</th>
+                                    <th class="small">Kategori</th>
+                                    <th class="small">Uraian</th>
+                                    <th class="small text-end">QTY</th>
+                                    <th class="small text-end">Harga Satuan</th>
+                                    <th class="small text-end">Jumlah</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -122,12 +124,14 @@
                                     <tr>
                                         <td class="small">{{ $item->account ? $item->account->account_description : '-' }}</td>
                                         <td class="small">{{ $item->remarks ?? '-' }}</td>
-                                        <td class="small"><strong>Rp {{ number_format($item->total_price, 0, ',', '.') }}</strong></td>
+                                        <td class="small text-end"><strong>{{ $item->qty ?? 1 }}</strong></td>
+                                        <td class="small text-end">Rp {{ number_format($item->unit_price ?? 0, 0, ',', '.') }}</td>
+                                        <td class="small text-end"><strong>Rp {{ number_format($item->total_price, 0, ',', '.') }}</strong></td>
                                     </tr>
                                 @endforeach
                                 <tr class="table-secondary">
-                                    <td colspan="2" class="small fw-bold text-end">Total:</td>
-                                    <td class="small fw-bold">Rp {{ number_format($realisasiBudget->total_amount, 0, ',', '.') }}</td>
+                                    <td colspan="4" class="small fw-bold text-end">Total:</td>
+                                    <td class="small fw-bold text-end">Rp {{ number_format($realisasiBudget->total_amount, 0, ',', '.') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -137,7 +141,7 @@
         </div>
 
         <div class="col-md-4">
-            @if(Auth::user()->id === $realisasiBudget->user_id && $realisasiBudget->status === 'draft')
+            @if(Auth::user()->id === $realisasiBudget->user_id)
                 <div class="card mb-3">
                     <div class="card-header py-2">
                         <h6 class="mb-0 small">Actions</h6>
@@ -146,8 +150,41 @@
                         <a href="{{ route('realisasi-budgets.edit', $realisasiBudget) }}" class="btn btn-sm btn-warning w-100 mb-2">
                             <i class="bi bi-pencil"></i> Edit
                         </a>
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle"></i> You can edit your own realization anytime
+                        </small>
                     </div>
                 </div>
+            @endif
+
+            @if($realisasiBudget->files->count() > 0)
+            <div class="card mb-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0 small">File Pendukung</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        @foreach($realisasiBudget->files as $file)
+                        <li class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="small">
+                                    <i class="bi bi-file-earmark"></i>
+                                    <a href="{{ Storage::url($file->file_path) }}" target="_blank" class="text-decoration-none">
+                                        {{ $file->file_name }}
+                                    </a>
+                                    <div class="text-muted" style="font-size: 0.75rem;">
+                                        {{ number_format($file->file_size / 1024, 2) }} KB
+                                    </div>
+                                </div>
+                                <a href="{{ Storage::url($file->file_path) }}" download class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </div>
+                        </li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
             @endif
 
             <div class="card">
@@ -169,7 +206,7 @@
                             @endif
                         </div>
                     </div>
-                    <a href="{{ route('budgets.show', $realisasiBudget->budget) }}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                    <a href="{{ route('budgets.show', $realisasiBudget->budget) }}" class="btn btn-sm btn-outline-primary w-100 mt-2" target="_blank">
                         <i class="bi bi-eye"></i> View Budget
                     </a>
                 </div>

@@ -11,6 +11,7 @@ class ApprovalController extends Controller
 {
     public function index()
     {
+        /** @var \App\Models\User $user */
         $user = auth()->user();
 
         if ($user->role === 'project_manager') {
@@ -19,8 +20,12 @@ class ApprovalController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
         } elseif ($user->role === 'finance') {
-            $pendingApprovals = Budget::where('status', 'pm_approved')
+            // Finance sees both pm_approved budgets and submitted budgets from cashiers
+            $pendingApprovals = Budget::whereIn('status', ['pm_approved', 'submitted'])
                 ->with(['user', 'items', 'approvals'])
+                ->whereHas('approvals', function($query) {
+                    $query->where('role', 'finance')->where('status', 'pending');
+                })
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
@@ -32,6 +37,7 @@ class ApprovalController extends Controller
 
     public function approve(Request $request, Budget $budget)
     {
+        /** @var \App\Models\User $user */
         $user = auth()->user();
 
         $validated = $request->validate([
@@ -62,9 +68,9 @@ class ApprovalController extends Controller
                 ]);
 
                 DB::commit();
-                return redirect()->route('approvals.index')->with('success', 'Budget approved successfully.');
+                return redirect()->route('dashboard')->with('success', 'Budget approved successfully.');
 
-            } elseif ($user->role === 'finance' && $budget->status === 'pm_approved') {
+            } elseif ($user->role === 'finance' && in_array($budget->status, ['pm_approved', 'submitted'])) {
                 $approval = BudgetApproval::where('budget_id', $budget->id)
                     ->where('role', 'finance')
                     ->first();
@@ -80,10 +86,19 @@ class ApprovalController extends Controller
                     'approved_at' => now(),
                 ]);
 
-                $budget->update(['status' => 'finance_approved']);
+                // Check if budget was created by cashier (only has finance approval)
+                $isCashierBudget = $budget->user->role === 'cashier';
+
+                if ($isCashierBudget) {
+                    // Cashier budgets become completed after finance approval
+                    $budget->update(['status' => 'completed']);
+                } else {
+                    // Regular budgets become finance_approved
+                    $budget->update(['status' => 'finance_approved']);
+                }
 
                 DB::commit();
-                return redirect()->route('approvals.index')->with('success', 'Budget approved successfully.');
+                return redirect()->route('dashboard')->with('success', 'Budget approved successfully.');
             } else {
                 DB::rollback();
                 return back()->with('error', 'You cannot approve this budget at this time.');
@@ -96,6 +111,7 @@ class ApprovalController extends Controller
 
     public function reject(Request $request, Budget $budget)
     {
+        /** @var \App\Models\User $user */
         $user = auth()->user();
 
         $validated = $request->validate([
@@ -123,9 +139,9 @@ class ApprovalController extends Controller
                 $budget->update(['status' => 'rejected']);
 
                 DB::commit();
-                return redirect()->route('approvals.index')->with('success', 'Budget rejected.');
+                return redirect()->route('dashboard')->with('success', 'Budget rejected.');
 
-            } elseif ($user->role === 'finance' && $budget->status === 'pm_approved') {
+            } elseif ($user->role === 'finance' && in_array($budget->status, ['pm_approved', 'submitted'])) {
                 $approval = BudgetApproval::where('budget_id', $budget->id)
                     ->where('role', 'finance')
                     ->first();
@@ -144,7 +160,7 @@ class ApprovalController extends Controller
                 $budget->update(['status' => 'rejected']);
 
                 DB::commit();
-                return redirect()->route('approvals.index')->with('success', 'Budget rejected.');
+                return redirect()->route('dashboard')->with('success', 'Budget rejected.');
             } else {
                 DB::rollback();
                 return back()->with('error', 'You cannot reject this budget at this time.');

@@ -4,15 +4,23 @@
 
 @section('content')
 <div class="container-fluid px-4">
+
+
     <form action="{{ isset($accountBank) ? route('account-banks.update', $accountBank) : route('account-banks.store') }}" method="POST">
         @csrf
         @if(isset($accountBank))
-            @method('PUT')
+        @method('PUT')
         @endif
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title">{{ isset($accountBank) ? 'Edit' : 'Tambah' }} Rekening Bank</h5>
+
+                <div class="mb-3">
+                    <a href="{{ route('account-banks.index') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Kembali
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
@@ -28,7 +36,7 @@
                     <div class="col-md-6">
                         <label for="bank_name" class="form-label small required">Nama Bank</label>
                         <input type="text" class="form-control form-control-sm @error('bank_name') is-invalid @enderror"
-                            id="bank_name" name="bank_name" value="{{ old('bank_name', $accountBank->bank_name ?? '') }}" 
+                            id="bank_name" name="bank_name" value="{{ old('bank_name', $accountBank->bank_name ?? '') }}"
                             placeholder="Contoh: BCA, Mandiri, BNI, BRI" required>
                         @error('bank_name')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -48,14 +56,9 @@
                 </div>
             </div>
             <div class="card-footer">
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="bi bi-save"></i> {{ isset($accountBank) ? 'Update' : 'Simpan' }}
-                    </button>
-                    <a href="{{ route('account-banks.index') }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Kembali
-                    </a>
-                </div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-save"></i> {{ isset($accountBank) ? 'Update' : 'Simpan' }}
+                </button>
             </div>
         </div>
     </form>

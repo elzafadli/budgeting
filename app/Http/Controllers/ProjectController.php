@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\ProjectFile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ProjectController extends Controller
 {
@@ -38,12 +41,38 @@ class ProjectController extends Controller
             'amount' => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'status' => 'required|in:in_progress,canceled,completed',
+            'files.*' => 'nullable|file|max:2048|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
         ]);
 
-        Project::create($validated);
+        DB::beginTransaction();
+        try {
+            $project = Project::create($validated);
 
-        return redirect()->route('projects.index')
-            ->with('success', 'Project created successfully.');
+            // Handle file uploads
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    $fileName = time() . '_' . $file->getClientOriginalName();
+                    $filePath = $file->store('project_files', 'public');
+
+                    ProjectFile::create([
+                        'project_id' => $project->id,
+                        'file_name' => $fileName,
+                        'file_path' => $filePath,
+                        'file_type' => $file->getClientMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('projects.index')
+                ->with('success', 'Project created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create project: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -51,7 +80,7 @@ class ProjectController extends Controller
      */
     public function show(Project $project)
     {
-        $project->load('budgets.user', 'budgets.items');
+        $project->load('budgets.user', 'budgets.items', 'files');
         return view('projects.show', compact('project'));
     }
 
@@ -60,6 +89,7 @@ class ProjectController extends Controller
      */
     public function edit(Project $project)
     {
+        $project->load('files');
         return view('projects.form', compact('project'));
     }
 
@@ -77,12 +107,38 @@ class ProjectController extends Controller
             'amount' => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'status' => 'required|in:in_progress,canceled,completed',
+            'files.*' => 'nullable|file|max:2048|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
         ]);
 
-        $project->update($validated);
+        DB::beginTransaction();
+        try {
+            $project->update($validated);
 
-        return redirect()->route('projects.index')
-            ->with('success', 'Project updated successfully.');
+            // Handle file uploads
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    $fileName = time() . '_' . $file->getClientOriginalName();
+                    $filePath = $file->store('project_files', 'public');
+
+                    ProjectFile::create([
+                        'project_id' => $project->id,
+                        'file_name' => $fileName,
+                        'file_path' => $filePath,
+                        'file_type' => $file->getClientMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('projects.index')
+                ->with('success', 'Project updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to update project: ' . $e->getMessage());
+        }
     }
 
     /**

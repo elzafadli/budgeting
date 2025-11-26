@@ -47,11 +47,11 @@
                             </td>
                             <td class="small">
                                 <a href="{{ route('projects.show', $project) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> View
+                                    <i class="bi bi-eye"></i> Detail
                                 </a>
                                 @if(Auth::user()->role === 'admin')
                                 <a href="{{ route('projects.edit', $project) }}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-pencil"></i>
+                                    <i class="bi bi-pencil"></i> Ubah
                                 </a>
                                 @endif
                             </td>

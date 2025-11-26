@@ -5,13 +5,16 @@
 @section('content')
 <div class="container-fluid px-4">
     <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="h4"><i class="bi bi-journal-text"></i> Budget Detail</h1>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{{ route('budgets.print', $budget) }}" class="btn btn-sm btn-primary me-2" target="_blank">
-                <i class="bi bi-printer"></i> Print
-            </a>
+        <div class="col-md-12 text-end">
+            @php
+                $isCashierBudget = $budget->user->role === 'cashier';
+                $canViewAmount = in_array(Auth::user()->role, ['cashier', 'finance']) || !$isCashierBudget;
+            @endphp
+            @if($canViewAmount)
+                <a href="{{ route('budgets.print', $budget) }}" class="btn btn-sm btn-primary me-2">
+                    <i class="bi bi-file-pdf"></i> Download PDF
+                </a>
+            @endif
             <a href="{{ route('budgets.index') }}" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back
             </a>
@@ -104,12 +107,20 @@
                     <div class="row">
                         <div class="col-md-6">
                             <label class="form-label small text-muted mb-1">Total Amount</label>
-                            <div class="small fw-bold">Rp {{ number_format($budget->total_amount, 0, ',', '.') }}</div>
+                            @if($budget->user->role === 'cashier' && !in_array(Auth::user()->role, ['cashier', 'finance']))
+                                <div class="small fw-bold"><span class="badge bg-warning text-dark">Restricted</span></div>
+                            @else
+                                <div class="small fw-bold">Rp {{ number_format($budget->total_amount, 0, ',', '.') }}</div>
+                            @endif
                         </div>
                         @if($budget->approved_total > 0)
                         <div class="col-md-6">
                             <label class="form-label small text-muted mb-1">Approved Amount</label>
-                            <div class="small fw-bold text-success">Rp {{ number_format($budget->approved_total, 0, ',', '.') }}</div>
+                            @if($budget->user->role === 'cashier' && !in_array(Auth::user()->role, ['cashier', 'finance']))
+                                <div class="small fw-bold text-success"><span class="badge bg-warning text-dark">Restricted</span></div>
+                            @else
+                                <div class="small fw-bold text-success">Rp {{ number_format($budget->approved_total, 0, ',', '.') }}</div>
+                            @endif
                         </div>
                         @endif
                     </div>
@@ -124,16 +135,18 @@
 
             <div class="card mb-3">
                 <div class="card-header py-2">
-                    <h6 class="mb-0 small">Rincian Item Anggaran</h6>
+                    <h6 class="mb-0 small">Rincian Pengajuan</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0">
                             <thead>
                                 <tr>
-                                    <th class="small" width="35%">Kategori</th>
-                                    <th class="small" width="30%">Uraian</th>
-                                    <th class="small text-end" width="25%">Jumlah</th>
+                                    <th class="small" width="30%">Kategori</th>
+                                    <th class="small" width="25%">Uraian</th>
+                                    <th class="small text-end" width="10%">Qty</th>
+                                    <th class="small text-end" width="15%">Harga Satuan</th>
+                                    <th class="small text-end" width="20%">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -141,12 +154,23 @@
                                     <tr>
                                         <td class="small">{{ $item->account ? $item->account->account_description : '-' }}</td>
                                         <td class="small">{{ $item->remarks ?? '-' }}</td>
-                                        <td class="small text-end"><strong>Rp {{ number_format($item->total_price, 0, ',', '.') }}</strong></td>
+                                        <td class="small text-end"><strong>{{ $item->qty }}</strong></td>
+                                        @if($budget->user->role === 'cashier' && !in_array(Auth::user()->role, ['cashier', 'finance']))
+                                            <td class="small text-center"><span class="badge bg-warning text-dark">Restricted</span></td>
+                                            <td class="small text-center"><span class="badge bg-warning text-dark">Restricted</span></td>
+                                        @else
+                                            <td class="small text-end">Rp {{ number_format($item->unit_price ?? 0, 0, ',', '.') }}</td>
+                                            <td class="small text-end"><strong>Rp {{ number_format($item->total_price, 0, ',', '.') }}</strong></td>
+                                        @endif
                                     </tr>
                                 @endforeach
                                 <tr class="table-secondary">
-                                    <td colspan="2" class="small fw-bold text-end">Total:</td>
-                                    <td class="small fw-bold text-end">Rp {{ number_format($budget->total_amount, 0, ',', '.') }}</td>
+                                    <td colspan="4" class="small fw-bold text-end">Total:</td>
+                                    @if($budget->user->role === 'cashier' && !in_array(Auth::user()->role, ['cashier', 'finance']))
+                                        <td class="small text-center"><span class="badge bg-warning text-dark">Restricted</span></td>
+                                    @else
+                                        <td class="small fw-bold text-end">Rp {{ number_format($budget->total_amount, 0, ',', '.') }}</td>
+                                    @endif
                                 </tr>
                             </tbody>
                         </table>
@@ -261,15 +285,22 @@
                 </div>
             @endif
 
-            @if($budget->status === 'completed')
+            @if($budget->status === 'completed' && Auth::user()->role === $budget->user->role)
                 <div class="card mb-3">
                     <div class="card-header py-2">
                         <h6 class="mb-0 small">Realisasi Actions</h6>
                     </div>
                     <div class="card-body">
-                        <a href="{{ route('realisasi-budgets.create', ['budget_id' => $budget->id]) }}" class="btn btn-sm btn-success w-100">
-                            <i class="bi bi-cash-coin"></i> Create Realisasi Budget
-                        </a>
+                        @if($budget->realisasiBudgets->isEmpty())
+                            <a href="{{ route('realisasi-budgets.create', ['budget_id' => $budget->id]) }}" class="btn btn-sm btn-success w-100">
+                                <i class="bi bi-cash-coin"></i> Buat Realisasi Pengajuan
+                            </a>
+                        @else
+                            <div class="alert alert-info mb-0 small">
+                                <i class="bi bi-info-circle"></i> Realisasi sudah dibuat untuk pengajuan ini.
+                                <a href="{{ route('realisasi-budgets.show', $budget->realisasiBudgets->first()) }}" class="alert-link" target="_blank">Lihat Realisasi</a>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -300,47 +331,26 @@
                 <div class="card-body">
                     <p class="small mb-3">This budget request requires your approval as <strong>{{ ucfirst(str_replace('_', ' ', $pendingApproval->role)) }}</strong>.</p>
 
+                    <div class="mb-3">
+                        <label for="approval_note" class="form-label small">Note <span class="text-danger">*</span></label>
+                        <textarea class="form-control form-control-sm" id="approval_note" name="note" rows="2" required placeholder="Add your note..."></textarea>
+                    </div>
+
                     <form action="{{ route('approvals.approve', $budget) }}" method="POST" class="d-inline">
                         @csrf
-                        <div class="mb-3">
-                            <label for="approve_note" class="form-label small">Note (Optional)</label>
-                            <textarea class="form-control form-control-sm" id="approve_note" name="note" rows="2" placeholder="Add approval note..."></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-sm btn-success me-2" onclick="return confirm('Approve this budget request?')">
+                        <input type="hidden" name="note" id="approve_note_hidden">
+                        <button type="submit" class="btn btn-sm btn-success me-2" onclick="var note = document.getElementById('approval_note').value.trim(); if(!note) { alert('Please add a note before approving.'); return false; } document.getElementById('approve_note_hidden').value = note; return confirm('Approve this budget request?')">
                             <i class="bi bi-check-circle"></i> Approve
                         </button>
                     </form>
 
-                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
-                        <i class="bi bi-x-circle"></i> Reject
-                    </button>
-
-                    <!-- Reject Modal -->
-                    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <form action="{{ route('approvals.reject', $budget) }}" method="POST">
-                                    @csrf
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="rejectModalLabel">Reject Budget Request</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label for="reject_note" class="form-label">Reason for Rejection <span class="text-danger">*</span></label>
-                                            <textarea class="form-control" id="reject_note" name="note" rows="3" required placeholder="Please provide a reason for rejection..."></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="bi bi-x-circle"></i> Reject Budget
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
+                    <form action="{{ route('approvals.reject', $budget) }}" method="POST" class="d-inline">
+                        @csrf
+                        <input type="hidden" name="note" id="reject_note_hidden">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="var note = document.getElementById('approval_note').value.trim(); if(!note) { alert('Please add a note before rejecting.'); return false; } document.getElementById('reject_note_hidden').value = note; return confirm('Reject this budget request?')">
+                            <i class="bi bi-x-circle"></i> Reject
+                        </button>
+                    </form>
                 </div>
             </div>
             @endif

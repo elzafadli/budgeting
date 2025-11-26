@@ -11,6 +11,8 @@ class RealisasiBudgetItem extends Model
         'budget_item_id',
         'account_id',
         'total_price',
+        'qty',
+        'unit_price',
         'remarks',
     ];
 

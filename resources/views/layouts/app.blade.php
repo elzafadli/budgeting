@@ -72,6 +72,65 @@
         .select2-container--bootstrap-5 .select2-selection--single .select2-selection__clear {
             margin-right: 0.5rem;
         }
+
+        /* DataTables info and controls smaller */
+        .dataTables_info,
+        .dataTables_length label,
+        .dataTables_filter label,
+        .dataTables_paginate {
+            font-size: 0.875rem !important;
+        }
+
+        .dataTables_length select,
+        .dataTables_filter input {
+            font-size: 0.875rem !important;
+        }
+
+        /* Global Parsley Validation Styles */
+        .parsley-errors-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.25rem 0 0 0;
+            font-size: 0.875rem;
+            color: #dc3545;
+        }
+
+        .parsley-errors-list li {
+            margin-bottom: 0.25rem;
+        }
+
+        .parsley-error {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+
+        .parsley-success {
+            border-color: #198754 !important;
+        }
+
+        /* Custom error styling for select elements */
+        select.parsley-error {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 16px 12px;
+        }
+
+        /* Validation feedback animation */
+        .parsley-errors-list {
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 
     @stack('styles')
@@ -112,9 +171,25 @@
     <script src="https://cdn.jsdelivr.net/npm/autonumeric@4.8.1/dist/autoNumeric.min.js"></script>
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
+    <!-- Parsley.js -->
+    <script src="https://cdn.jsdelivr.net/npm/parsleyjs@2.9.2/dist/parsley.min.js"></script>
+
     <script>
         $(document).ready(function() {
+            // Global Parsley Configuration
+            window.Parsley.setLocale('en');
+            window.Parsley.options.errorClass = 'parsley-error';
+            window.Parsley.options.successClass = 'parsley-success';
+            window.Parsley.options.errorsWrapper = '<ul class="parsley-errors-list"></ul>';
+            window.Parsley.options.errorTemplate = '<li></li>';
+            window.Parsley.options.trigger = 'change';
+            window.Parsley.options.excluded = 'input[type=button], input[type=submit], input[type=reset], input[type=hidden], [disabled], :hidden';
+
+            // Auto-initialize Parsley on forms with data-parsley-validate attribute
+            $('form[data-parsley-validate]').each(function() {
+                $(this).parsley();
+            });
+
             // Initialize Select2 on all select elements with Bootstrap 5 theme
             $('select').select2({
                 theme: 'bootstrap-5',
@@ -138,7 +213,7 @@
             });
         });
     </script>
-    
+
     @stack('scripts')
 </body>
 </html>

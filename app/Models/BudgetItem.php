@@ -10,7 +10,7 @@ class BudgetItem extends Model
         'budget_id',
         'account_id',
         'item_name',
-        'quantity',
+        'qty',
         'unit_price',
         'total_price',
         'remarks',

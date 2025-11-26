@@ -38,6 +38,11 @@ class RealisasiBudget extends Model
         return $this->hasMany(RealisasiBudgetItem::class);
     }
 
+    public function files()
+    {
+        return $this->hasMany(RealisasiBudgetFile::class);
+    }
+
     public static function generateRealisasiNo()
     {
         $lastRealisasi = self::latest('id')->first();

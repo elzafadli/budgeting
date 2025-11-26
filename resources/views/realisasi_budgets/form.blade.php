@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="container-fluid px-4">
-    <form action="{{ isset($realisasiBudget) ? route('realisasi-budgets.update', $realisasiBudget) : route('realisasi-budgets.store') }}" method="POST">
+    <form action="{{ isset($realisasiBudget) ? route('realisasi-budgets.update', $realisasiBudget) : route('realisasi-budgets.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @if(isset($realisasiBudget))
         @method('PUT')
@@ -13,8 +13,13 @@
         <input type="hidden" name="budget_id" value="{{ $budget->id }}">
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title">Form Realisasi Anggaran</h5>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('budgets.show', $budget) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Kembali
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
@@ -59,6 +64,18 @@
                     @enderror
                 </div>
 
+                <div class="mb-3">
+                    <label for="files" class="form-label small">Upload File Pendukung</label>
+                    <input type="file" class="form-control form-control-sm @error('files.*') is-invalid @enderror"
+                        id="files" name="files[]" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                    <div class="form-text small">
+                        <i class="bi bi-info-circle"></i> Format: PDF, JPG, PNG, DOC, DOCX, XLS, XLSX. Max: 10MB per file. Bisa upload multiple files.
+                    </div>
+                    @error('files.*')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 <hr>
 
                 <h6 class="mb-3 small">Item Realisasi</h6>
@@ -76,9 +93,11 @@
                     <table class="table table-sm table-bordered">
                         <thead>
                             <tr>
-                                <th class="small" width="35%">Kategori</th>
-                                <th class="small" width="30%">Uraian</th>
-                                <th class="small" width="25%">Jumlah</th>
+                                <th class="small" width="25%">Kategori</th>
+                                <th class="small" width="20%">Uraian</th>
+                                <th class="small" width="10%">Qty</th>
+                                <th class="small" width="15%">Harga Satuan</th>
+                                <th class="small" width="20%">Jumlah</th>
                                 <th class="small text-center" width="10%">Aksi</th>
                             </tr>
                         </thead>
@@ -102,8 +121,16 @@
                                         name="items[{{ $index }}][remarks]" value="{{ old("items.$index.remarks", $item->remarks) }}">
                                 </td>
                                 <td>
+                                    <input type="number" class="form-control form-control-sm qty-input"
+                                        name="items[{{ $index }}][qty]" value="{{ old("items.$index.qty", $item->qty ?? 1) }}" min="1" required>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm currency-input unit-price"
+                                        name="items[{{ $index }}][unit_price]" value="{{ old("items.$index.unit_price", $item->unit_price ?? 0) }}" required>
+                                </td>
+                                <td>
                                     <input type="text" class="form-control form-control-sm currency-input total-price"
-                                        name="items[{{ $index }}][total_price]" value="{{ old("items.$index.total_price", $item->total_price) }}" required>
+                                        name="items[{{ $index }}][total_price]" value="{{ old("items.$index.total_price", $item->total_price) }}" required readonly>
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-danger remove-item">
@@ -130,7 +157,13 @@
                                     <input type="text" class="form-control form-control-sm" name="items[{{ $index }}][remarks]" value="{{ $budgetItem->remarks }}">
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm currency-input total-price" name="items[{{ $index }}][total_price]" value="{{ $budgetItem->total_price }}" required>
+                                    <input type="number" class="form-control form-control-sm qty-input" name="items[{{ $index }}][qty]" value="{{ $budgetItem->qty ?? 1 }}" min="1" required>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm currency-input unit-price" name="items[{{ $index }}][unit_price]" value="{{ $budgetItem->unit_price ?? 0 }}" required>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm currency-input total-price" name="items[{{ $index }}][total_price]" value="{{ $budgetItem->total_price }}" required readonly>
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-danger remove-item">
@@ -157,9 +190,6 @@
                     <button type="submit" class="btn btn-sm btn-primary">
                         <i class="bi bi-save"></i> {{ isset($realisasiBudget) ? 'Update' : 'Simpan' }}
                     </button>
-                    <a href="{{ route('budgets.show', $budget) }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Kembali
-                    </a>
                 </div>
             </div>
         </div>
@@ -198,7 +228,7 @@
         });
 
         // Initialize currency inputs
-        document.querySelectorAll('.total-price').forEach(input => {
+        document.querySelectorAll('.unit-price, .total-price').forEach(input => {
             initCurrencyMask(input);
         });
         updateGrandTotal();
@@ -222,7 +252,13 @@
             <input type="text" class="form-control form-control-sm" name="items[${itemIndex}][remarks]">
         </td>
         <td>
-            <input type="text" class="form-control form-control-sm currency-input total-price" name="items[${itemIndex}][total_price]" required>
+            <input type="number" class="form-control form-control-sm qty-input" name="items[${itemIndex}][qty]" value="1" min="1" required>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm currency-input unit-price" name="items[${itemIndex}][unit_price]" required>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm currency-input total-price" name="items[${itemIndex}][total_price]" required readonly>
         </td>
         <td class="text-center">
             <button type="button" class="btn btn-sm btn-danger remove-item">
@@ -240,9 +276,11 @@
             allowClear: true
         });
 
-        // Initialize currency mask for the new price input
-        const newPrice = newRow.querySelector('.total-price');
-        initCurrencyMask(newPrice);
+        // Initialize currency mask for the new inputs
+        const newUnitPrice = newRow.querySelector('.unit-price');
+        const newTotalPrice = newRow.querySelector('.total-price');
+        initCurrencyMask(newUnitPrice);
+        initCurrencyMask(newTotalPrice);
         itemIndex++;
         updateGrandTotal();
     });
@@ -261,10 +299,26 @@
     });
 
     document.getElementById('realisasi-items').addEventListener('input', function(e) {
-        if (e.target.classList.contains('total-price')) {
+        if (e.target.classList.contains('qty-input') || e.target.classList.contains('unit-price')) {
+            const row = e.target.closest('tr');
+            calculateRowTotal(row);
+        }
+        if (e.target.classList.contains('total-price') || e.target.classList.contains('qty-input') || e.target.classList.contains('unit-price')) {
             updateGrandTotal();
         }
     });
+
+    function calculateRowTotal(row) {
+        const qtyInput = row.querySelector('.qty-input');
+        const unitPriceInput = row.querySelector('.unit-price');
+        const totalPriceInput = row.querySelector('.total-price');
+
+        const qty = parseInt(qtyInput.value) || 0;
+        const unitPrice = AutoNumeric.getNumber(unitPriceInput) || 0;
+        const total = qty * unitPrice;
+
+        AutoNumeric.set(totalPriceInput, total);
+    }
 
     function updateGrandTotal() {
         let grandTotal = 0;

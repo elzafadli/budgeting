@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\BudgetDetailController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\RealizationController;
 use App\Http\Controllers\RealisasiBudgetController;
@@ -22,6 +23,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Budget routes
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
+    Route::get('/budgets/get-data', [BudgetController::class, 'getData'])->name('budgets.getData');
     Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
     Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
     Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
@@ -34,6 +36,11 @@ Route::middleware(['auth'])->group(function () {
     // Cashier routes for budget completion
     Route::get('/budgets/{budget}/cashier-edit', [BudgetController::class, 'cashierEdit'])->name('budgets.cashier-edit')->middleware('role:cashier');
     Route::put('/budgets/{budget}/cashier-update', [BudgetController::class, 'cashierUpdate'])->name('budgets.cashier-update')->middleware('role:cashier');
+
+    // Budget Details routes
+    Route::get('/budget-details', [BudgetDetailController::class, 'index'])->name('budget-details.index');
+    Route::get('/budget-details/get-data', [BudgetDetailController::class, 'getData'])->name('budget-details.getData');
+    Route::get('/budget-details/export', [BudgetDetailController::class, 'export'])->name('budget-details.export');
 
     // Project routes
     Route::resource('projects', ProjectController::class);
@@ -59,6 +66,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Realisasi Budget routes
     Route::get('/realisasi-budgets', [RealisasiBudgetController::class, 'index'])->name('realisasi-budgets.index');
+    Route::get('/realisasi-budgets/get-data', [RealisasiBudgetController::class, 'getData'])->name('realisasi-budgets.getData');
     Route::get('/realisasi-budgets/create', [RealisasiBudgetController::class, 'create'])->name('realisasi-budgets.create');
     Route::post('/realisasi-budgets', [RealisasiBudgetController::class, 'store'])->name('realisasi-budgets.store');
     Route::get('/realisasi-budgets/{realisasiBudget}', [RealisasiBudgetController::class, 'show'])->name('realisasi-budgets.show');

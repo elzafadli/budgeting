@@ -34,7 +34,11 @@
                         <div class="col-md-8">
                             <table class="table table-sm table-borderless mb-0">
                                 <tr>
-                                    <th width="150" class="small">Requestor:</th>
+                                    <th width="150" class="small">Project:</th>
+                                    <td class="small">{{ $budget->project ? $budget->project->name : '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="small">Requestor:</th>
                                     <td class="small">{{ $budget->user->name }}</td>
                                 </tr>
                                 <tr>
@@ -55,6 +59,8 @@
                                 </tr>
                             </table>
 
+                            <hr>
+
                             <a href="{{ route('budgets.show', $budget) }}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye"></i> View Details
                             </a>
@@ -63,45 +69,26 @@
                             <div class="border-start ps-3">
                                 <h6 class="mb-3 small">Approval Action</h6>
 
-                                <form action="{{ route('approvals.approve', $budget) }}" method="POST" class="mb-2">
+                                <div class="mb-3">
+                                    <label for="approval_note_{{ $budget->id }}" class="form-label small">Note <span class="text-danger">*</span></label>
+                                    <textarea class="form-control form-control-sm" id="approval_note_{{ $budget->id }}" rows="2" required placeholder="Add your note..."></textarea>
+                                </div>
+
+                                <form action="{{ route('approvals.approve', $budget) }}" method="POST" class="d-inline">
                                     @csrf
-                                    <div class="mb-2">
-                                        <label class="form-label small">Note (optional)</label>
-                                        <textarea class="form-control form-control-sm" name="note" rows="2"></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-sm btn-success w-100" onclick="return confirm('Approve this budget?')">
-                                        <i class="bi bi-check-lg"></i> Approve
+                                    <input type="hidden" name="note" id="approve_note_hidden_{{ $budget->id }}">
+                                    <button type="submit" class="btn btn-sm btn-success w-100 mb-2" onclick="var note = document.getElementById('approval_note_{{ $budget->id }}').value.trim(); if(!note) { alert('Please add a note before approving.'); return false; } document.getElementById('approve_note_hidden_{{ $budget->id }}').value = note; return confirm('Approve this budget request?')">
+                                        <i class="bi bi-check-circle"></i> Approve
                                     </button>
                                 </form>
 
-                                <button type="button" class="btn btn-sm btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $budget->id }}">
-                                    <i class="bi bi-x-lg"></i> Reject
-                                </button>
-
-                                {{-- Reject Modal --}}
-                                <div class="modal fade" id="rejectModal{{ $budget->id }}" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h6 class="modal-title small">Reject Budget Request</h6>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form action="{{ route('approvals.reject', $budget) }}" method="POST">
-                                                @csrf
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label class="form-label small required">Reason for Rejection</label>
-                                                        <textarea class="form-control form-control-sm" name="note" rows="3" required></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-sm btn-danger">Reject Budget</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
+                                <form action="{{ route('approvals.reject', $budget) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <input type="hidden" name="note" id="reject_note_hidden_{{ $budget->id }}">
+                                    <button type="submit" class="btn btn-sm btn-danger w-100" onclick="var note = document.getElementById('approval_note_{{ $budget->id }}').value.trim(); if(!note) { alert('Please add a note before rejecting.'); return false; } document.getElementById('reject_note_hidden_{{ $budget->id }}').value = note; return confirm('Reject this budget request?')">
+                                        <i class="bi bi-x-circle"></i> Reject
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>

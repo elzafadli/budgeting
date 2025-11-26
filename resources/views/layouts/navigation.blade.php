@@ -63,17 +63,21 @@
                 </a>
             </li>
 
+            @if(Auth::user()->role === 'admin' || Auth::user()->role === 'cashier')
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('accounts.*') ? 'active' : '' }}" href="{{ route('accounts.index') }}">
                     <i class="bi bi-book"></i> Kategori
                 </a>
             </li>
+            @endif
 
+            @if(Auth::user()->role === 'cashier' || Auth::user()->role === 'finance')
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('account-banks.*') ? 'active' : '' }}" href="{{ route('account-banks.index') }}">
                     <i class="bi bi-bank"></i> Rekening Bank
                 </a>
             </li>
+            @endif
 
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('budgets.*') ? 'active' : '' }}" href="{{ route('budgets.index') }}">
@@ -82,30 +86,40 @@
             </li>
 
             <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('budget-details.*') ? 'active' : '' }}" href="{{ route('budget-details.index') }}">
+                    <i class="bi bi-list-ul"></i> Laporan Pengajuan
+                </a>
+            </li>
+
+            @if(Auth::user()->role === 'admin' || Auth::user()->role === 'finance' || Auth::user()->role === 'cashier')
+            <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('realisasi-budgets.*') ? 'active' : '' }}" href="{{ route('realisasi-budgets.index') }}">
                     <i class="bi bi-cash-coin"></i> Realisasi
                 </a>
             </li>
+            @endif
 
+            @if(Auth::user()->role === 'admin')
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('invoices.*') ? 'active' : '' }}" href="{{ route('invoices.index') }}">
                     <i class="bi bi-receipt"></i> Invoice
                 </a>
             </li>
+            @endif
 
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.profit_loss') }}">
                     <i class="bi bi-file-earmark-text"></i> Laporan
                 </a>
-            </li>
+            </li> -->
 
-            @if(in_array(Auth::user()->role, ['project_manager', 'finance']))
+            <!-- @if(in_array(Auth::user()->role, ['project_manager', 'finance']))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}">
                     <i class="bi bi-check-circle"></i> Approvals
                 </a>
             </li>
-            @endif
+            @endif -->
         </ul>
     </div>
 </nav>
@@ -170,6 +184,12 @@
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('budgets.*') ? 'active' : '' }}" href="{{ route('budgets.index') }}">
                     <i class="bi bi-journal-text"></i> Budgets
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('budget-details.*') ? 'active' : '' }}" href="{{ route('budget-details.index') }}">
+                    <i class="bi bi-list-ul"></i> Detail Pengajuan
                 </a>
             </li>
 
